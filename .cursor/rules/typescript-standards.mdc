@@ -1,0 +1,50 @@
+---
+description: TypeScript 编码规范
+globs: "**/*.ts"
+alwaysApply: false
+---
+
+# TypeScript 规范
+
+- 启用 `strict: true`
+- 禁止使用 `any`，必要时用 `unknown` 替代
+- 所有函数参数和返回值必须有类型注解
+- 优先使用 `interface` 定义对象类型，`type` 用于联合类型/工具类型
+
+## 类型定义
+
+- 类型文件放 `src/models/types/`，枚举放 `src/models/enums/`
+- 接口不加 `I` 前缀
+
+```typescript
+// ✅ GOOD
+export interface User {
+  id: string
+  name: string
+  email: string
+}
+
+// ❌ BAD
+export interface IUser { ... }
+export type User = { ... }  // 应使用 interface
+```
+
+## Service 层
+
+- API 函数封装在 `src/services/api/` 下
+- 每个模块一个文件，函数必须有请求/响应类型
+
+```typescript
+// src/services/api/user-api.ts
+import type { User, UserCreateParams } from '@/models/types/user'
+import { http } from '@/utils/http'
+
+export const userApi = {
+  getList(): Promise<User[]> {
+    return http.get('/users')
+  },
+  create(params: UserCreateParams): Promise<User> {
+    return http.post('/users', params)
+  },
+}
+```

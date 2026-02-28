@@ -1,0 +1,41 @@
+---
+description: MVVM 架构开发工作流 — 新增功能模块时遵循此流程
+alwaysApply: false
+---
+
+# MVVM 开发工作流
+
+新增功能模块（如用户管理、订单系统等）时，按以下步骤执行：
+
+## 1. 定义 Model 层
+
+1. 在 `src/models/types/` 创建类型定义文件
+2. 在 `src/models/enums/` 创建枚举（如需要）
+3. 在 `src/services/api/` 创建 API Service 封装
+
+## 2. 定义 ViewModel 层
+
+1. 在 `src/stores/` 创建 Pinia Store（全局/模块级状态）
+   - 使用 `defineStore` + Composition API 风格
+   - 包含 State、Getters、Actions
+2. 在 `src/composables/` 创建组合式函数（组件级逻辑复用）
+   - 封装表单验证、交互逻辑等
+
+## 3. 定义 View 层
+
+1. 在 `src/views/` 创建页面组件（对应路由）
+2. 在 `src/components/ui/` 创建纯 UI 组件（无业务逻辑）
+3. 在 `src/components/business/` 创建业务组件（组合 UI 组件 + composable）
+
+## 4. 注册路由
+
+在 `src/router/` 中添加路由配置。
+
+## 检查清单
+
+- [ ] Model 层：类型定义完整，API Service 封装完毕
+- [ ] ViewModel 层：Store/Composable 覆盖所有业务逻辑
+- [ ] View 层：组件只做展示和事件绑定
+- [ ] 数据流：View → ViewModel → Model 单向流动
+- [ ] 无 `any` 类型，所有函数有类型注解
+- [ ] 组件使用 `<script setup lang="ts">` 和 `scoped` 样式

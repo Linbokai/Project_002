@@ -1,0 +1,412 @@
+---
+description: UI 美术设计规范 — shadcn/ui Neutral 主题 + Apple 氛围感增强
+globs: "**/*.vue,**/*.css"
+alwaysApply: false
+---
+
+# UI 美术设计规范
+
+以 shadcn/ui Neutral 主题为结构基础，叠加 Apple 风格的毛玻璃、光效与微交互，打造兼具专业感和氛围感的工具界面。
+
+## 核心设计哲学
+
+- **结构克制，氛围精致**：组件结构遵循 shadcn/ui 规范，在关键层级（Header、浮层、焦点态）添加氛围增强效果
+- **语义化颜色**：所有颜色通过 CSS 变量（oklch 色彩空间）+ Tailwind 语义类名引用，禁止硬编码
+- **background / foreground 约定**：`--primary` 用于背景，`--primary-foreground` 用于其上的文字，其他语义色同理
+- **品牌色贯穿**：通过 `--brand` 变量注入品牌蓝，用于选中态、焦点环、光效等关键交互点
+- **暗色模式分层**：暗色下 card > background，popover > card，毛玻璃层再叠加半透明
+
+## 颜色系统
+
+### 色彩空间：oklch
+
+项目使用 oklch 色彩空间，CSS 变量存储 oklch 原始分量（L C H），Tailwind 配置中通过 `oklch(var(--variable) / <alpha-value>)` 引用。
+
+### 语义变量
+
+| 语义变量 | 用途 |
+|---------|------|
+| `--background` / `--foreground` | 页面底层背景与主文字 |
+| `--card` / `--card-foreground` | 卡片背景与文字（暗色下比 background 亮一级） |
+| `--popover` / `--popover-foreground` | 弹出层背景与文字（暗色下比 card 亮一级） |
+| `--primary` / `--primary-foreground` | 主操作（按钮、选中态） |
+| `--secondary` / `--secondary-foreground` | 次要操作 |
+| `--muted` / `--muted-foreground` | 静默区域背景与辅助文字 |
+| `--accent` / `--accent-foreground` | 悬浮/激活态背景 |
+| `--destructive` / `--destructive-foreground` | 危险操作 |
+| `--brand` / `--brand-foreground` | 品牌蓝，用于选中态边框、焦点光效、状态指示 |
+| `--border` | 通用边框 |
+| `--input` | 输入框边框 |
+| `--ring` | 焦点环 |
+| `--chart-1` ~ `--chart-5` | 图表配色 |
+| `--sidebar` / `--sidebar-*` | 侧边栏专属颜色组 |
+
+### 品牌色定义
+
+品牌色基于蓝色系，贯穿选中态、焦点态、状态指示等关键交互点：
+
+```
+:root {
+  --brand: 0.623 0.214 259.815;          /* 亮色品牌蓝 */
+  --brand-foreground: 0.985 0 0;
+}
+.dark {
+  --brand: 0.655 0.196 262.438;          /* 暗色品牌蓝，略亮以保证对比度 */
+  --brand-foreground: 0.985 0 0;
+}
+```
+
+品牌色使用场景：
+- ✅ 选中态边框和背景：`border-brand bg-brand/5`
+- ✅ 焦点环：`focus-visible:ring-brand`
+- ✅ 输入框焦点光效：`shadow-[0_0_0_1px_oklch(var(--brand)/0.3)]`
+- ✅ 状态指示器：搜索/生成连接成功
+- ✅ 主要行动按钮（生成脚本）：`bg-brand text-brand-foreground`
+- ❌ 不用于普通文字、边框、背景等大面积区域
+
+### Neutral 主题色值参考
+
+亮色模式（`:root`）：纯中性灰阶，hue = 0，chroma = 0
+暗色模式（`.dark`）：card 比 background 亮一级，popover 再亮一级，accent 再亮一级
+
+### 暗色模式特性
+
+- 通过 `darkMode: 'class'` 控制，`<html>` 元素的 `.dark` 类切换
+- 暗色下 `--card`（L=0.205）比 `--background`（L=0.145）亮一级
+- 暗色下 `--popover`（L=0.269）比 `--card` 亮一级
+- 暗色下 `--accent`（L=0.371）明显区分于 secondary/muted
+- 主题切换通过 `useThemeStore` 管理，支持 light / dark / system 三种模式
+
+### 颜色使用规则
+
+- ✅ `bg-primary text-primary-foreground` — 语义化配对
+- ✅ `text-muted-foreground` — 辅助说明文字
+- ✅ `bg-destructive text-destructive-foreground` — 危险操作
+- ✅ `bg-sidebar text-sidebar-foreground` — 侧边栏区域
+- ✅ `bg-brand text-brand-foreground` — 品牌色主要操作
+- ✅ `border-brand bg-brand/5` — 选中态卡片
+- ❌ `bg-[#1a1a2e]`、`text-gray-500` — 禁止硬编码或直接用 Tailwind 色板
+- **例外**：Badge 自定义色可用 `bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300` 模式
+
+## 毛玻璃与氛围层级
+
+### 毛玻璃使用规则
+
+毛玻璃效果仅用于需要"浮于内容之上"的固定层级，不可滥用：
+
+| 层级 | 样式 | 使用场景 |
+|------|------|---------|
+| L1 Header | `bg-background/80 backdrop-blur-xl saturate-150` | 顶部栏（固定定位时） |
+| L2 遮罩 | `bg-black/40 backdrop-blur-sm` | Dialog/Modal 遮罩层 |
+| L3 浮层 | `bg-popover/90 backdrop-blur-lg` | Popover、Dropdown Content |
+| 禁用 | — | 卡片、侧边栏面板、消息气泡等内容区域 |
+
+### 背景氛围
+
+暗色模式下，聊天区域可使用极淡的径向渐变增加纵深感：
+
+```
+.chat-ambient {
+  background: radial-gradient(ellipse at 50% 0%, oklch(0.205 0.015 260 / 0.4) 0%, transparent 70%);
+}
+```
+
+规则：
+- 仅限暗色模式的聊天主区域使用
+- 渐变必须极淡（alpha ≤ 0.4），不可喧宾夺主
+- 亮色模式不使用背景渐变
+
+## 圆角
+
+`--radius` 默认值为 `0.625rem`（10px），所有圆角基于此变量派生：
+
+| Tailwind 类 | 值 | 使用场景 |
+|-------------|-----|---------|
+| `rounded-lg` | `var(--radius)` | 卡片、对话框、大容器 |
+| `rounded-md` | `calc(var(--radius) - 2px)` | 按钮、输入框、下拉菜单 |
+| `rounded-sm` | `calc(var(--radius) - 4px)` | Badge、小标签 |
+| `rounded-full` | 圆形 | 头像、状态圆点、圆形图标按钮、药丸按钮 |
+
+## 排版
+
+- 正文：`text-sm`（14px），行高 `leading-normal`
+- 辅助说明：`text-sm text-muted-foreground`
+- 小标签：`text-xs`
+- 卡片标题：`text-lg font-semibold leading-none tracking-tight`
+- 卡片描述：`text-sm text-muted-foreground`
+- 对话框标题：`text-lg font-semibold leading-none tracking-tight`
+- 对话框描述：`text-sm text-muted-foreground`
+- Label 标签：`text-sm font-medium leading-none`
+- 字体渲染：全局 `-webkit-font-smoothing: antialiased`
+
+## 间距
+
+| 场景 | 间距 |
+|------|------|
+| 卡片内边距 | `p-6`（默认），`p-4`（sm 尺寸） |
+| CardHeader 与 CardContent 间 | 由 `flex flex-col gap-6` 控制 |
+| 表单字段间距 | FieldGroup 用 `flex flex-col gap-4` |
+| 表单字段内部 | Field 用 `grid gap-2`（Label 与 Input 之间） |
+| 对话框内容区 | `p-6`，Footer 与内容间 `gap-4` |
+| 按钮组间距 | `gap-2` |
+| 行内图标与文字 | 约 `gap-2` |
+
+## 组件样式规范
+
+### Button 按钮
+
+七种 variant + 四种 size：
+
+```
+variant:
+  default:     bg-primary text-primary-foreground shadow-xs hover:bg-primary/90
+  brand:       bg-brand text-brand-foreground shadow-xs hover:bg-brand/90 （主要行动按钮）
+  secondary:   bg-secondary text-secondary-foreground shadow-xs hover:bg-secondary/80
+  outline:     border border-input bg-background shadow-xs hover:bg-accent hover:text-accent-foreground
+  ghost:       hover:bg-accent hover:text-accent-foreground
+  destructive: bg-destructive text-destructive-foreground shadow-xs hover:bg-destructive/90
+  link:        text-primary underline-offset-4 hover:underline
+
+size:
+  default: h-9 px-4 py-2 text-sm
+  sm:      h-8 rounded-md px-3 text-xs
+  lg:      h-10 rounded-md px-6 text-base
+  icon:    h-9 w-9（正方形图标按钮）
+```
+
+- 所有按钮：`inline-flex items-center justify-center gap-2 rounded-md font-medium transition-[color,background-color,box-shadow]`
+- 禁用态：`disabled:pointer-events-none disabled:opacity-50`
+- focus 环：`focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring`
+- 微交互：`active:scale-[0.97]`（ghost 和 outline variant）
+
+### Input 输入框
+
+```
+h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm
+shadow-xs transition-[color,border-color,box-shadow]
+placeholder:text-muted-foreground
+focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand focus-visible:border-brand
+disabled:cursor-not-allowed disabled:opacity-50
+aria-invalid:border-destructive
+```
+
+暗色模式下输入框焦点增加品牌色微发光：
+```
+.dark input:focus-visible,
+.dark textarea:focus-visible {
+  box-shadow: 0 0 0 1px oklch(var(--brand) / 0.3), 0 0 12px oklch(var(--brand) / 0.08);
+}
+```
+
+### Card 卡片
+
+```
+Card:        rounded-lg border bg-card text-card-foreground shadow-sm
+             hover 交互卡片增加：transition-[box-shadow,border-color] hover:shadow-md hover:-translate-y-px
+CardHeader:  flex flex-col gap-1.5 p-6
+CardTitle:   text-lg font-semibold leading-none tracking-tight
+CardDescription: text-sm text-muted-foreground
+CardContent: p-6 pt-0
+CardFooter:  flex items-center p-6 pt-0
+```
+
+选中态卡片：`border-brand bg-brand/5 shadow-sm`
+暗色选中态增加微弱光晕：`dark:shadow-[0_0_8px_oklch(var(--brand)/0.1)]`
+
+### Dialog 对话框
+
+```
+遮罩层：fixed inset-0 z-50 bg-black/40 backdrop-blur-sm
+面板：w-full max-w-sm bg-background rounded-lg border shadow-lg p-6 flex flex-col gap-4
+DialogHeader: flex flex-col gap-1.5 text-center sm:text-left
+DialogTitle:  text-lg font-semibold leading-none tracking-tight
+DialogDescription: text-sm text-muted-foreground
+DialogFooter: flex flex-col-reverse gap-2 sm:flex-row sm:justify-end
+```
+
+### Badge 徽章
+
+```
+variant:
+  default:     bg-primary text-primary-foreground shadow-xs hover:bg-primary/80
+  secondary:   bg-secondary text-secondary-foreground hover:bg-secondary/80
+  destructive: bg-destructive text-destructive-foreground shadow-xs hover:bg-destructive/80
+  outline:     border text-foreground
+  brand:       bg-brand/10 text-brand border-brand/20 border （品牌色柔和徽章）
+
+通用：inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium transition-colors
+```
+
+### Tabs 标签页
+
+```
+TabsList:    inline-flex h-9 items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground
+TabsTrigger: inline-flex items-center justify-center rounded-md px-3 py-1 text-sm font-medium
+  激活态：bg-background text-foreground shadow-sm
+  非激活态：hover:text-foreground
+```
+
+### Select 下拉选择
+
+```
+Trigger: flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs
+Content: bg-popover/90 text-popover-foreground rounded-md border shadow-md backdrop-blur-lg
+Item:    relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm
+  focus:bg-accent focus:text-accent-foreground
+```
+
+### Toast 通知
+
+```
+容器位置：fixed top-0 right-0 z-[100] p-4
+单条：bg-background text-foreground border rounded-lg shadow-lg p-4 flex items-start gap-3
+variant:
+  default:     bg-background border
+  success:     border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950 dark:text-green-200
+  destructive: border-destructive bg-destructive text-destructive-foreground
+```
+
+### Separator 分隔线
+
+```
+水平：h-px w-full bg-border
+垂直：h-full w-px bg-border
+```
+
+### Skeleton 骨架屏
+
+```
+animate-pulse rounded-md bg-muted
+```
+
+## 主题切换
+
+- 主题状态通过 `useThemeStore`（Pinia）管理
+- 支持三种模式：`light` / `dark` / `system`
+- 切换逻辑封装在 `useTheme` composable 中
+- UI 组件 `ThemeToggle.vue` 使用 lucide 的 `Sun` / `Moon` 图标
+- 主题偏好持久化到 localStorage（key: `ai-model-hub-theme`）
+- 通过 `document.documentElement.classList` 切换 `.dark` 类
+
+## 图标
+
+- 统一使用 `lucide-vue-next`
+- 默认尺寸 16px（组件内），图标按钮内自动适配
+- 图标颜色继承当前文字颜色，不单独设色
+
+## 动画与微交互
+
+### 基础过渡
+
+```
+进入：animate-in fade-in-0 zoom-in-95    duration-200
+退出：animate-out fade-out-0 zoom-out-95  duration-150
+遮罩层：fade-in-0 / fade-out-0
+```
+
+### 交互反馈
+
+| 场景 | 效果 | 实现 |
+|------|------|------|
+| 按钮 hover | 颜色变化 | `transition-[color,background-color,box-shadow]` |
+| 按钮 active | 微缩放 | `active:scale-[0.97]`（ghost/outline） |
+| 可交互卡片 hover | 浮起 + 阴影加深 | `hover:shadow-md hover:-translate-y-px transition-[box-shadow,transform]` |
+| 输入框 focus | 边框变色 + 微发光 | `focus-visible:ring-brand` + 暗色 glow |
+| 侧边栏展开/收起 | 宽度过渡 | `transition-[width] duration-200` |
+| 消息气泡入场 | 方向性淡入 | 用户消息从右滑入，AI 消息从左滑入 |
+| 列表入场 | 交错动画 | 每项延迟 50ms，淡入 + 上移 |
+| 状态指示器 | 呼吸脉冲 | `animate-pulse`（连接中），静态色点（已连接/未连接） |
+
+### 消息气泡动画
+
+```css
+/* AI 消息：从左淡入 */
+@keyframes slide-in-left {
+  from { opacity: 0; transform: translateX(-12px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* 用户消息：从右淡入 */
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(12px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+```
+
+### 列表交错入场
+
+```css
+@keyframes stagger-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+/* 通过 style="animation-delay: calc(var(--i) * 50ms)" 实现交错 */
+```
+
+### 过渡属性规则
+
+- ✅ `transition-colors` — 纯色变化
+- ✅ `transition-[color,background-color,box-shadow]` — 按钮含阴影变化
+- ✅ `transition-[box-shadow,transform]` — 卡片浮起效果
+- ✅ `transition-[width]` — 侧边栏宽度
+- ✅ `transition-opacity` — 淡入淡出
+- ✅ `transition-transform` — 缩放/位移
+- ❌ `transition-all` — 禁止（性能差且不可预测）
+
+## 焦点与无障碍
+
+- 所有可交互元素：`focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring`
+- 品牌色焦点（输入框）：`focus-visible:ring-brand`
+- 图标按钮必须有 `aria-label`
+- 禁用态：`disabled:pointer-events-none disabled:opacity-50`
+- 错误状态输入框：`aria-invalid:border-destructive`
+
+## 阴影与光效层级
+
+| 层级 | 阴影类 | 使用场景 |
+|------|--------|---------|
+| 无阴影 | — | 大多数页面元素 |
+| 微阴影 | `shadow-xs` | 按钮（default/outline/secondary/destructive） |
+| 轻阴影 | `shadow-sm` | 卡片、激活态 Tab |
+| 中阴影 | `shadow-md` | 下拉菜单 Content、hover 态卡片 |
+| 重阴影 | `shadow-lg` | 对话框面板、Toast |
+| 品牌光晕 | `shadow-[0_0_8px_oklch(var(--brand)/0.1)]` | 暗色模式选中态卡片 |
+| 焦点光效 | `shadow-[0_0_0_1px_oklch(var(--brand)/0.3),0_0_12px_oklch(var(--brand)/0.08)]` | 暗色模式输入框焦点 |
+
+光效规则：
+- 品牌色光晕仅限暗色模式（`.dark`）使用
+- 亮色模式下使用标准阴影，不加光效
+- 光效透明度严格控制在 ≤ 0.15，不可过亮
+
+## 滚动条
+
+```css
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: oklch(var(--border)); border-radius: 9999px; }
+::-webkit-scrollbar-thumb:hover { background: oklch(var(--muted-foreground)); }
+```
+
+## 空状态设计
+
+空状态必须包含三层信息：图形 + 说明 + 操作引导
+
+```
+结构：flex flex-col items-center justify-center gap-4 text-center
+图形：text-4xl 或 SVG 插画（48-64px），使用 text-muted-foreground/50
+标题：text-sm font-medium text-muted-foreground
+描述：text-xs text-muted-foreground/70
+操作：1-2 个引导按钮（outline 或 ghost variant）
+```
+
+## 禁止事项
+
+- ❌ 硬编码颜色（`#fff`、`rgb()`、`hsl(220, 10%, 5%)`、`text-gray-*`、`bg-zinc-*`）
+- ❌ `transition-all`（必须指定属性，参见"过渡属性规则"）
+- ❌ 引入 lucide 以外的图标库
+- ❌ 跳过 `focus-visible` 焦点样式
+- ❌ 使用 hsl 色彩空间（已全面切换到 oklch）
+- ❌ 在内容区域使用毛玻璃（卡片、消息气泡、侧边栏面板）
+- ❌ 亮色模式使用光晕/发光效果
+- ❌ 背景渐变 alpha > 0.4
+- ❌ 对话框遮罩使用 `bg-background/80`（标准是 `bg-black/40 backdrop-blur-sm`）
