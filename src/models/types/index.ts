@@ -19,6 +19,8 @@ export type {
   ImageSize,
   ImageConfig,
   GeneratedImage,
+  ReferenceImageType,
+  ReferenceImage,
   VisualContext,
   ShotImageKey,
   ScriptKey,

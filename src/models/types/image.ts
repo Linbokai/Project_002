@@ -17,10 +17,20 @@ export interface GeneratedImage {
   createdAt: number
 }
 
+export type ReferenceImageType = 'character' | 'style'
+
+export interface ReferenceImage {
+  url: string
+  name: string
+  type: ReferenceImageType
+}
+
 export interface VisualContext {
   text: string
   extractedAt: number
   isEdited: boolean
+  characterImages?: ReferenceImage[]
+  styleImages?: ReferenceImage[]
 }
 
 export type ShotImageKey = string

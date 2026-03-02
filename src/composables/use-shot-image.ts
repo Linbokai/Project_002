@@ -52,13 +52,28 @@ export function useShotImage(scriptKey: ScriptKey, shotKey: ShotImageKey) {
     imageStore.setLoading(shotKey, true)
     try {
       const contextText = await ensureVisualContext(scriptText)
+      const ctx = imageStore.getContext(scriptKey)
 
-      const referenceImages = imageStore.getScriptImages(scriptKey)
+      const uploadedRefs = [
+        ...(ctx?.characterImages ?? []),
+        ...(ctx?.styleImages ?? []),
+      ].map((img) => img.url)
+
+      const generatedRefs = imageStore.getScriptImages(scriptKey)
         .slice(-IMAGE_DEFAULTS.MAX_REFERENCE_IMAGES)
         .map((img) => img.url)
 
-      const systemPrompt = buildImageSystemPrompt(contextText)
-      const prompt = buildShotImagePrompt(sceneDescription, referenceImages.length > 0)
+      const referenceImages = [...uploadedRefs, ...generatedRefs]
+
+      const hasCharacterImages = (ctx?.characterImages?.length ?? 0) > 0
+      const hasStyleImages = (ctx?.styleImages?.length ?? 0) > 0
+
+      const systemPrompt = buildImageSystemPrompt(contextText, hasCharacterImages, hasStyleImages)
+      const prompt = buildShotImagePrompt(
+        sceneDescription,
+        generatedRefs.length > 0,
+        uploadedRefs.length > 0,
+      )
 
       const imageConfig: ImageConfig = {
         aspect_ratio: configStore.config.aspectRatio as ImageConfig['aspect_ratio'],

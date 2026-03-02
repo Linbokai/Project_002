@@ -15,20 +15,41 @@ export function buildVisualContextExtractionPrompt(scriptText: string): string {
 ${scriptText}`
 }
 
-export function buildImageSystemPrompt(visualContext: string): string {
-  return `你是一个专业的买量广告画面生成助手。请严格按照以下视觉设定生成图片，确保角色外观、画面风格和视觉元素与设定保持一致。
+export function buildImageSystemPrompt(
+  visualContext: string,
+  hasCharacterImages: boolean,
+  hasStyleImages: boolean,
+): string {
+  const parts = [
+    '你是一个专业的买量广告画面生成助手。请严格按照以下视觉设定生成图片，确保角色外观、画面风格和视觉元素与设定保持一致。',
+  ]
 
-视觉设定：
-${visualContext}`
+  if (hasCharacterImages || hasStyleImages) {
+    const refs: string[] = []
+    if (hasCharacterImages) refs.push('角色外观参考图')
+    if (hasStyleImages) refs.push('画面风格参考图')
+    parts.push(`用户已提供${refs.join('和')}，请严格参照其中的视觉特征进行生成。`)
+  }
+
+  parts.push(`视觉设定：\n${visualContext}`)
+  return parts.join('\n\n')
 }
 
 export function buildShotImagePrompt(
   sceneDescription: string,
   hasReferences: boolean,
+  hasUploadedRefs: boolean,
 ): string {
-  const refHint = hasReferences
-    ? '请参考上方提供的图片，保持角色外观和画面风格的一致性。\n\n'
-    : ''
+  const hints: string[] = []
+
+  if (hasUploadedRefs) {
+    hints.push('请严格参考提供的角色外观和画面风格参考图，保持人物形象和画面风格高度一致。')
+  }
+  if (hasReferences) {
+    hints.push('请同时参考之前已生成的分镜图片，确保整体画面连贯性。')
+  }
+
+  const refHint = hints.length > 0 ? hints.join('\n') + '\n\n' : ''
 
   return `${refHint}请为以下分镜画面描述生成一张参考图：
 

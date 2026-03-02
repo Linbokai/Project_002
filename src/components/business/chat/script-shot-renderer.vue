@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { ChevronDown, ChevronRight, ImagePlus, Loader2, Pencil } from 'lucide-vue-next'
+import { ChevronDown, ChevronRight, ImagePlus, Loader2, Pencil, X, Upload, User, Palette } from 'lucide-vue-next'
 import { parseFrames } from '@/services/helpers/frame-parser'
 import { useImageStore } from '@/stores/image-store'
 import { useShotImage } from '@/composables/use-shot-image'
 import ShotImageBlock from './shot-image-block.vue'
 import BaseButton from '@/components/ui/base-button.vue'
+import type { ReferenceImage, ReferenceImageType } from '@/models/types'
 
 const props = defineProps<{
   content: string
@@ -19,14 +20,46 @@ const shots = computed(() => parseFrames(props.content))
 const contextExpanded = ref(false)
 const contextEditing = ref(false)
 const contextDraft = ref('')
+const characterImagesDraft = ref<ReferenceImage[]>([])
+const styleImagesDraft = ref<ReferenceImage[]>([])
+
+const characterInputRef = ref<HTMLInputElement | null>(null)
+const styleInputRef = ref<HTMLInputElement | null>(null)
 
 const visualContext = computed(() => imageStore.getContext(scriptKey.value))
 const contextLoading = computed(() => imageStore.isContextLoading(scriptKey.value))
 
 function startEditContext() {
   contextDraft.value = visualContext.value?.text ?? ''
+  characterImagesDraft.value = [...(visualContext.value?.characterImages ?? [])]
+  styleImagesDraft.value = [...(visualContext.value?.styleImages ?? [])]
   contextEditing.value = true
   contextExpanded.value = true
+}
+
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result as string)
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
+}
+
+async function handleFileUpload(files: FileList | null, type: ReferenceImageType) {
+  if (!files?.length) return
+  const target = type === 'character' ? characterImagesDraft : styleImagesDraft
+
+  for (const file of Array.from(files)) {
+    if (!file.type.startsWith('image/')) continue
+    const url = await fileToDataUrl(file)
+    target.value.push({ url, name: file.name, type })
+  }
+}
+
+function removeImage(type: ReferenceImageType, index: number) {
+  const target = type === 'character' ? characterImagesDraft : styleImagesDraft
+  target.value.splice(index, 1)
 }
 
 function saveContext() {
@@ -35,6 +68,8 @@ function saveContext() {
     text: contextDraft.value.trim(),
     extractedAt: Date.now(),
     isEdited: true,
+    characterImages: [...characterImagesDraft.value],
+    styleImages: [...styleImagesDraft.value],
   })
   contextEditing.value = false
 }
@@ -107,7 +142,92 @@ const fieldLabels: Record<string, string> = {
             class="w-full resize-y rounded-md border border-input bg-background px-2 py-1.5 text-xs leading-relaxed focus:outline-none focus:ring-1 focus:ring-ring"
             rows="6"
           />
-          <div class="mt-1.5 flex gap-1.5">
+
+          <!-- 角色外观参考图 -->
+          <div class="mt-3">
+            <div class="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+              <User :size="12" />
+              角色外观参考图
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <div
+                v-for="(img, idx) in characterImagesDraft"
+                :key="`char-${idx}`"
+                class="group relative"
+              >
+                <img
+                  :src="img.url"
+                  :alt="img.name"
+                  class="h-16 w-16 rounded-md border border-border object-cover"
+                />
+                <button
+                  class="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-destructive-foreground opacity-0 transition-opacity group-hover:opacity-100"
+                  @click="removeImage('character', idx)"
+                >
+                  <X :size="10" />
+                </button>
+              </div>
+              <button
+                class="flex h-16 w-16 flex-col items-center justify-center gap-0.5 rounded-md border border-dashed border-border/60 text-muted-foreground transition-colors hover:border-foreground/40 hover:text-foreground"
+                @click="characterInputRef?.click()"
+              >
+                <Upload :size="14" />
+                <span class="text-[10px]">上传</span>
+              </button>
+              <input
+                ref="characterInputRef"
+                type="file"
+                accept="image/*"
+                multiple
+                class="hidden"
+                @change="handleFileUpload(($event.target as HTMLInputElement).files, 'character')"
+              />
+            </div>
+          </div>
+
+          <!-- 画面风格参考图 -->
+          <div class="mt-3">
+            <div class="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+              <Palette :size="12" />
+              画面风格参考图
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <div
+                v-for="(img, idx) in styleImagesDraft"
+                :key="`style-${idx}`"
+                class="group relative"
+              >
+                <img
+                  :src="img.url"
+                  :alt="img.name"
+                  class="h-16 w-16 rounded-md border border-border object-cover"
+                />
+                <button
+                  class="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-destructive-foreground opacity-0 transition-opacity group-hover:opacity-100"
+                  @click="removeImage('style', idx)"
+                >
+                  <X :size="10" />
+                </button>
+              </div>
+              <button
+                class="flex h-16 w-16 flex-col items-center justify-center gap-0.5 rounded-md border border-dashed border-border/60 text-muted-foreground transition-colors hover:border-foreground/40 hover:text-foreground"
+                @click="styleInputRef?.click()"
+              >
+                <Upload :size="14" />
+                <span class="text-[10px]">上传</span>
+              </button>
+              <input
+                ref="styleInputRef"
+                type="file"
+                accept="image/*"
+                multiple
+                class="hidden"
+                @change="handleFileUpload(($event.target as HTMLInputElement).files, 'style')"
+              />
+            </div>
+          </div>
+
+          <div class="mt-2.5 flex gap-1.5">
             <BaseButton size="sm" variant="brand" class="h-6 px-2 text-xs" @click="saveContext">
               保存
             </BaseButton>
@@ -116,10 +236,49 @@ const fieldLabels: Record<string, string> = {
             </BaseButton>
           </div>
         </template>
-        <pre
-          v-else-if="visualContext"
-          class="whitespace-pre-wrap text-xs leading-relaxed text-foreground/80"
-        >{{ visualContext.text }}</pre>
+
+        <template v-else-if="visualContext">
+          <pre class="whitespace-pre-wrap text-xs leading-relaxed text-foreground/80">{{ visualContext.text }}</pre>
+
+          <!-- 只读模式展示已上传图片 -->
+          <div
+            v-if="visualContext.characterImages?.length"
+            class="mt-2.5"
+          >
+            <div class="mb-1 flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
+              <User :size="11" />
+              角色外观
+            </div>
+            <div class="flex flex-wrap gap-1.5">
+              <img
+                v-for="(img, idx) in visualContext.characterImages"
+                :key="`char-ro-${idx}`"
+                :src="img.url"
+                :alt="img.name"
+                class="h-14 w-14 rounded border border-border/60 object-cover"
+              />
+            </div>
+          </div>
+
+          <div
+            v-if="visualContext.styleImages?.length"
+            class="mt-2.5"
+          >
+            <div class="mb-1 flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
+              <Palette :size="11" />
+              画面风格
+            </div>
+            <div class="flex flex-wrap gap-1.5">
+              <img
+                v-for="(img, idx) in visualContext.styleImages"
+                :key="`style-ro-${idx}`"
+                :src="img.url"
+                :alt="img.name"
+                class="h-14 w-14 rounded border border-border/60 object-cover"
+              />
+            </div>
+          </div>
+        </template>
       </div>
     </div>
 
