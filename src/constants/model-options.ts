@@ -8,6 +8,7 @@ export const SEARCH_MODELS: ModelOption[] = [
   { id: 'perplexity/sonar-pro-search', name: 'Sonar Pro Search', description: '多步推理联网搜索' },
   { id: 'perplexity/sonar-pro', name: 'Sonar Pro', description: '联网搜索（稳定）' },
   { id: 'google/gemini-3-flash-preview', name: 'Gemini 3 Flash', description: '支持联网搜索｜1M上下文' },
+  { id: 'deepseek/deepseek-r1', name: 'DeepSeek R1', description: '深度推理搜索' },
 ]
 
 export const GEN_MODELS: ModelOption[] = [

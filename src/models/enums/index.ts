@@ -20,6 +20,10 @@ export enum ScriptType {
   CgStory = 'cg_story',
   Hook5s = 'hook5s',
   Skit = 'skit',
+  UeShowcasePV = 'ue_showcase_pv',
+  UeShowcaseMapRun = 'ue_showcase_map_run',
+  UeShowcaseCharacter = 'ue_showcase_character',
+  UeGameplayScript = 'ue_gameplay_script',
 }
 
 export enum AudienceType {
@@ -39,6 +43,11 @@ export enum SearchPlatform {
   All = 'all',
 }
 
+export enum SearchRegion {
+  Domestic = 'domestic',
+  Overseas = 'overseas',
+}
+
 export enum ThemeCategory {
   SubjectAesthetic = 'subject_aesthetic',
   EmotionalResonance = 'emotional_resonance',
@@ -53,6 +62,16 @@ export enum GenerationStatus {
   Generating = 'generating',
   Done = 'done',
   Error = 'error',
+}
+
+export enum ProductionDirection {
+  Script2D = 'script_2d',
+  UeGameplay = 'ue_gameplay',
+}
+
+export enum UeContentType {
+  Showcase = 'showcase',
+  Gameplay = 'gameplay',
 }
 
 export enum MessageType {

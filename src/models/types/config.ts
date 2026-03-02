@@ -3,6 +3,8 @@ import type {
   AspectRatio,
   ScriptType,
   AudienceType,
+  ProductionDirection,
+  UeContentType,
 } from '@/models/enums'
 
 export interface HeroConfig {
@@ -17,6 +19,7 @@ export interface CollabIPConfig {
 }
 
 export interface GenerationConfig {
+  direction: ProductionDirection
   gameId: string
   duration: VideoDuration
   aspectRatio: AspectRatio
@@ -28,6 +31,8 @@ export interface GenerationConfig {
   selectedThemes: string[]
   selectedSellTags: string[]
   additionalRequirements: string
+  ueContentType: UeContentType
+  selectedGameplays: string[]
 }
 
 export interface ApiConfig {

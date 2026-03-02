@@ -8,3 +8,8 @@ export type {
   GenerationConfig,
   ApiConfig,
 } from './config'
+export type {
+  GameplayPreset,
+  GameplayTopic,
+  CustomGameplay,
+} from './gameplay'

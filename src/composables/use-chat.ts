@@ -5,7 +5,8 @@ import { useGameStore } from '@/stores/game-store'
 import { useSettingsStore } from '@/stores/settings-store'
 import { streamChat } from '@/services/api/openrouter-api'
 import { buildSystemPrompt } from '@/services/helpers/script-prompt-builder'
-import { GenerationStatus, MessageType } from '@/models/enums'
+import { buildUeSystemPrompt } from '@/services/helpers/gameplay-prompt-builder'
+import { GenerationStatus, MessageType, ProductionDirection } from '@/models/enums'
 import { useToast } from '@/composables/use-toast'
 
 const QUICK_ACTION_PROMPTS: Record<string, string> = {
@@ -33,10 +34,11 @@ export function useChat() {
       return
     }
 
-    const systemPrompt = buildSystemPrompt(
-      unref(configStore.config),
-      unref(gameStore.currentGame),
-    )
+    const genConfig = unref(configStore.config)
+    const currentGame = unref(gameStore.currentGame)
+    const systemPrompt = genConfig.direction === ProductionDirection.UeGameplay
+      ? buildUeSystemPrompt(genConfig, currentGame)
+      : buildSystemPrompt(genConfig, currentGame)
     chatStore.addMessage({
       role: 'user',
       content: userText,
@@ -67,7 +69,11 @@ export function useChat() {
   }
 
   async function generateScript(): Promise<void> {
-    await runGeneration('请根据以上配置生成买量视频脚本。')
+    const direction = unref(configStore.config).direction
+    const prompt = direction === ProductionDirection.UeGameplay
+      ? '请根据以上配置生成3D/UE创意玩法买量脚本。先输出玩法策划简案，再写分镜脚本。'
+      : '请根据以上配置生成买量视频脚本。'
+    await runGeneration(prompt)
   }
 
   async function sendMessage(userText: string): Promise<void> {

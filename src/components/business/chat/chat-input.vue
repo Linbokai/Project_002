@@ -6,13 +6,19 @@ import VideoMetricsDialog from './video-metrics-dialog.vue'
 import { Send, Sparkles, Video } from 'lucide-vue-next'
 import { useChat } from '@/composables/use-chat'
 import { useVideoAnalysis } from '@/composables/use-video-analysis'
+import { useConfigStore } from '@/stores/config-store'
+import { ProductionDirection } from '@/models/enums'
 
 const { sendMessage, generateScript, isGenerating } = useChat()
 const { analyzeVideo, analyzing, progress } = useVideoAnalysis()
+const configStore = useConfigStore()
 const inputText = ref('')
 const showVideoDialog = ref(false)
 
 const busy = computed(() => isGenerating.value || analyzing.value)
+const generateLabel = computed(() =>
+  configStore.config.direction === ProductionDirection.UeGameplay ? '生成玩法脚本' : '生成脚本',
+)
 
 async function handleSend() {
   const text = inputText.value.trim()
@@ -57,7 +63,7 @@ async function handleVideoSubmit(file: File, metrics?: VideoMetrics) {
         @click="handleGenerate"
       >
         <Sparkles v-if="!isGenerating" :size="14" />
-        生成脚本
+        {{ generateLabel }}
       </BaseButton>
       <BaseButton
         variant="outline"

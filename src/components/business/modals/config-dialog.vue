@@ -10,10 +10,19 @@ import BaseBadge from '@/components/ui/base-badge.vue'
 import ChipSelect from '@/components/ui/chip-select.vue'
 import { useConfigStore } from '@/stores/config-store'
 import { useGameStore } from '@/stores/game-store'
-import { VideoDuration, AspectRatio, ScriptType, AudienceType } from '@/models/enums'
+import { VideoDuration, AspectRatio, ScriptType, AudienceType, ProductionDirection, UeContentType } from '@/models/enums'
 import { SCRIPT_TYPES } from '@/constants/script-types'
 import { AUDIENCE_PROFILES } from '@/constants/audience-profiles'
 import { SELL_TAG_GROUPS } from '@/constants/sell-tags'
+
+const SCRIPT_2D_TYPES = [
+  ScriptType.VoGuide, ScriptType.VoIntro, ScriptType.VoBenefit,
+  ScriptType.Showcase, ScriptType.CgStory, ScriptType.Hook5s, ScriptType.Skit,
+]
+const UE_TYPES = [
+  ScriptType.UeShowcasePV, ScriptType.UeShowcaseMapRun,
+  ScriptType.UeShowcaseCharacter, ScriptType.UeGameplayScript,
+]
 
 const props = defineProps<{
   open: boolean
@@ -28,6 +37,8 @@ const gameStore = useGameStore()
 
 const activeTab = ref('basic')
 
+const isUeDirection = computed(() => configStore.config.direction === ProductionDirection.UeGameplay)
+
 const tabs = [
   { value: 'basic', label: '基础配置' },
   { value: 'audience', label: '人设与画像' },
@@ -41,9 +52,22 @@ const gameOptions = computed(() => {
 })
 
 const audienceOptions = AUDIENCE_PROFILES.map((p) => ({ value: p.id, label: p.label }))
-const scriptTypeOptions = SCRIPT_TYPES.map((s) => ({ value: s.id, label: s.name }))
+
+const scriptTypeOptions = computed(() => {
+  const allowedIds = isUeDirection.value ? UE_TYPES : SCRIPT_2D_TYPES
+  return SCRIPT_TYPES
+    .filter((s) => allowedIds.includes(s.id))
+    .map((s) => ({ value: s.id, label: s.name }))
+})
 
 const selectedTagCount = computed(() => configStore.config.selectedSellTags.length)
+
+function switchDirection(dir: ProductionDirection) {
+  const defaultScriptType = dir === ProductionDirection.UeGameplay
+    ? ScriptType.UeGameplayScript
+    : ScriptType.VoGuide
+  configStore.updateConfig({ direction: dir, scriptType: defaultScriptType })
+}
 
 function handleReset() {
   configStore.resetConfig()
@@ -61,6 +85,27 @@ function handleDone() {
     </template>
 
     <div class="flex flex-col gap-4">
+      <!-- 制作方向切换 -->
+      <div class="flex flex-col gap-2">
+        <label class="text-sm font-medium">制作方向</label>
+        <div class="flex gap-2">
+          <BaseButton
+            :variant="!isUeDirection ? 'brand' : 'outline'"
+            size="sm"
+            @click="switchDirection(ProductionDirection.Script2D)"
+          >
+            2D视频脚本
+          </BaseButton>
+          <BaseButton
+            :variant="isUeDirection ? 'brand' : 'outline'"
+            size="sm"
+            @click="switchDirection(ProductionDirection.UeGameplay)"
+          >
+            3D/UE创意玩法
+          </BaseButton>
+        </div>
+      </div>
+
       <BaseTabs v-model="activeTab" :tabs="tabs" />
 
       <!-- Tab 1: 基础配置 -->
@@ -74,6 +119,28 @@ function handleDone() {
             @update:model-value="(v) => configStore.updateConfig({ gameId: v })"
           />
         </div>
+
+        <!-- UE 素材类型 -->
+        <div v-if="isUeDirection" class="flex flex-col gap-2">
+          <label class="text-sm font-medium">素材类型</label>
+          <div class="flex gap-2">
+            <BaseButton
+              :variant="configStore.config.ueContentType === UeContentType.Gameplay ? 'brand' : 'outline'"
+              size="sm"
+              @click="configStore.updateConfig({ ueContentType: UeContentType.Gameplay, scriptType: ScriptType.UeGameplayScript })"
+            >
+              创意玩法
+            </BaseButton>
+            <BaseButton
+              :variant="configStore.config.ueContentType === UeContentType.Showcase ? 'brand' : 'outline'"
+              size="sm"
+              @click="configStore.updateConfig({ ueContentType: UeContentType.Showcase, scriptType: ScriptType.UeShowcasePV })"
+            >
+              展示类
+            </BaseButton>
+          </div>
+        </div>
+
         <div class="flex flex-col gap-2">
           <label class="text-sm font-medium">视频时长</label>
           <div class="flex flex-wrap gap-2">

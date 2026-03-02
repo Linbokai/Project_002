@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import IconSidebar from '@/components/business/layout/icon-sidebar.vue'
 import AppHeader from '@/components/business/layout/app-header.vue'
 import ChatArea from '@/components/business/chat/chat-area.vue'
@@ -9,20 +9,31 @@ import GameManagerDialog from '@/components/business/modals/game-manager-dialog.
 import ConfigDialog from '@/components/business/modals/config-dialog.vue'
 import HistoryPanel from '@/components/business/modals/history-panel.vue'
 import ThemePanelOverlay from '@/components/business/theme-radar/theme-panel-overlay.vue'
+import GameplayPanelOverlay from '@/components/business/gameplay-radar/gameplay-panel-overlay.vue'
 import BaseToast from '@/components/ui/base-toast.vue'
 import { useHistoryStore } from '@/stores/history-store'
 import { useChatStore } from '@/stores/chat-store'
+import { useConfigStore } from '@/stores/config-store'
+import { ProductionDirection } from '@/models/enums'
+
+const configStore = useConfigStore()
+const isUeDirection = computed(() => configStore.config.direction === ProductionDirection.UeGameplay)
 
 const configOpen = ref(false)
 const historyOpen = ref(false)
 const apiSettingsOpen = ref(false)
 const gameManagerOpen = ref(false)
 const themePanelOpen = ref(false)
-const themePanelType = ref<'search' | 't1' | 't2' | 't3' | 'add' | null>(null)
+const gameplayPanelOpen = ref(false)
+const panelType = ref<'search' | 't1' | 't2' | 't3' | 'add' | null>(null)
 
 function handleOpenPanel(type: 'search' | 't1' | 't2' | 't3' | 'add') {
-  themePanelType.value = type
-  themePanelOpen.value = true
+  panelType.value = type
+  if (isUeDirection.value) {
+    gameplayPanelOpen.value = true
+  } else {
+    themePanelOpen.value = true
+  }
 }
 
 function handleOpenConfig() {
@@ -87,10 +98,16 @@ function handleLoadSession(id: string) {
     <ApiConfigDialog v-if="apiSettingsOpen" :open="apiSettingsOpen" @close="apiSettingsOpen = false" />
     <GameManagerDialog v-if="gameManagerOpen" :open="gameManagerOpen" @close="gameManagerOpen = false" />
     <ThemePanelOverlay
-      v-if="themePanelOpen && themePanelType"
+      v-if="themePanelOpen && panelType"
       :open="themePanelOpen"
-      :initial-view="themePanelType"
+      :initial-view="panelType"
       @close="themePanelOpen = false"
+    />
+    <GameplayPanelOverlay
+      v-if="gameplayPanelOpen && panelType"
+      :open="gameplayPanelOpen"
+      :initial-view="panelType"
+      @close="gameplayPanelOpen = false"
     />
     </div>
   </BaseToast>

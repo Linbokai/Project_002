@@ -1,12 +1,13 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { GenerationConfig } from '@/models/types'
-import { VideoDuration, AspectRatio, ScriptType, AudienceType } from '@/models/enums'
+import { VideoDuration, AspectRatio, ScriptType, AudienceType, ProductionDirection, UeContentType } from '@/models/enums'
 import { STORAGE_KEYS } from '@/constants'
 import { getItem, setItem } from '@/utils'
 
 function defaultConfig(): GenerationConfig {
   return {
+    direction: ProductionDirection.Script2D,
     gameId: '',
     duration: VideoDuration.S15,
     aspectRatio: AspectRatio.Portrait,
@@ -18,6 +19,8 @@ function defaultConfig(): GenerationConfig {
     selectedThemes: [],
     selectedSellTags: [],
     additionalRequirements: '',
+    ueContentType: UeContentType.Gameplay,
+    selectedGameplays: [],
   }
 }
 
@@ -51,10 +54,20 @@ export const useConfigStore = defineStore('config', () => {
     setItem(STORAGE_KEYS.GENERATION_CONFIG, config.value)
   }
 
+  function toggleGameplay(gameplayId: string) {
+    const idx = config.value.selectedGameplays.indexOf(gameplayId)
+    if (idx === -1) {
+      config.value.selectedGameplays.push(gameplayId)
+    } else {
+      config.value.selectedGameplays.splice(idx, 1)
+    }
+    setItem(STORAGE_KEYS.GENERATION_CONFIG, config.value)
+  }
+
   function resetConfig() {
     config.value = defaultConfig()
     setItem(STORAGE_KEYS.GENERATION_CONFIG, config.value)
   }
 
-  return { config, updateConfig, toggleSellTag, toggleTheme, resetConfig }
+  return { config, updateConfig, toggleSellTag, toggleTheme, toggleGameplay, resetConfig }
 })
