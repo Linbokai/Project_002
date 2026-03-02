@@ -1,5 +1,6 @@
-import { API_DEFAULTS, APP_NAME } from '@/constants'
+import { API_DEFAULTS } from '@/constants'
 import type { ApiConfig } from '@/models/types'
+import { buildHeaders, parseApiError } from './openrouter-client'
 
 export interface StreamCallbacks {
   onChunk: (text: string) => void
@@ -21,15 +22,6 @@ interface RequestOptions {
   maxTokens?: number
 }
 
-function buildHeaders(config: ApiConfig): Record<string, string> {
-  return {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${config.openRouterKey}`,
-    'HTTP-Referer': window.location.origin,
-    'X-Title': encodeURIComponent(APP_NAME),
-  }
-}
-
 function buildBody(options: RequestOptions) {
   return {
     model: options.model,
@@ -49,13 +41,12 @@ export async function streamChat(
   try {
     const response = await fetch(url, {
       method: 'POST',
-      headers: buildHeaders(options.config),
+      headers: buildHeaders(options.config.openRouterKey),
       body: JSON.stringify(buildBody({ ...options, stream: true })),
     })
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => null)
-      const msg = errorData?.error?.message ?? `HTTP ${response.status}`
+      const msg = await parseApiError(response)
       callbacks.onError(msg)
       return
     }
@@ -108,7 +99,7 @@ export async function chatCompletion(
 
   const response = await fetch(url, {
     method: 'POST',
-    headers: buildHeaders(options.config),
+    headers: buildHeaders(options.config.openRouterKey),
     body: JSON.stringify(buildBody({ ...options, stream: false })),
   })
 

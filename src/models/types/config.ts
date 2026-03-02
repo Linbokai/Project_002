@@ -40,4 +40,15 @@ export interface ApiConfig {
   searchModel: string
   genModel: string
   visionModel: string
+  imageModel: string
+}
+
+export interface KeyInfo {
+  label: string
+  limit: number | null
+  limitRemaining: number | null
+  usage: number
+  usageDaily: number
+  usageMonthly: number
+  isFreeTier: boolean
 }

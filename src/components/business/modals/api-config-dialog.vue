@@ -7,7 +7,7 @@ import BaseSelect from '@/components/ui/base-select.vue'
 import StatusIndicator from '@/components/ui/status-indicator.vue'
 import { useSettingsStore } from '@/stores/settings-store'
 import { testConnection } from '@/services/api/openrouter-api'
-import { SEARCH_MODELS, GEN_MODELS, VISION_MODELS } from '@/constants/model-options'
+import { SEARCH_MODELS, GEN_MODELS, VISION_MODELS, IMAGE_MODELS } from '@/constants/model-options'
 import { useToast } from '@/composables/use-toast'
 import type { ApiConfig } from '@/models/types'
 
@@ -26,6 +26,7 @@ const apiKey = ref('')
 const searchModel = ref('')
 const genModel = ref('')
 const visionModel = ref('')
+const imageModel = ref('')
 const searchStatus = ref<'disconnected' | 'connecting' | 'connected'>('disconnected')
 const genStatus = ref<'disconnected' | 'connecting' | 'connected'>('disconnected')
 const testing = ref(false)
@@ -33,6 +34,7 @@ const testing = ref(false)
 const searchModelOptions = SEARCH_MODELS.map((m) => ({ value: m.id, label: m.name }))
 const genModelOptions = GEN_MODELS.map((m) => ({ value: m.id, label: m.name }))
 const visionModelOptions = VISION_MODELS.map((m) => ({ value: m.id, label: m.name }))
+const imageModelOptions = IMAGE_MODELS.map((m) => ({ value: m.id, label: m.name }))
 
 watch(
   () => props.open,
@@ -42,6 +44,7 @@ watch(
       searchModel.value = settingsStore.config.searchModel
       genModel.value = settingsStore.config.genModel
       visionModel.value = settingsStore.config.visionModel
+      imageModel.value = settingsStore.config.imageModel
       searchStatus.value = 'disconnected'
       genStatus.value = 'disconnected'
     }
@@ -55,6 +58,7 @@ async function handleTestConnection() {
     searchModel: searchModel.value,
     genModel: genModel.value,
     visionModel: visionModel.value,
+    imageModel: imageModel.value,
   }
   searchStatus.value = 'connecting'
   genStatus.value = 'connecting'
@@ -97,6 +101,7 @@ function handleSave() {
     searchModel: searchModel.value,
     genModel: genModel.value,
     visionModel: visionModel.value,
+    imageModel: imageModel.value,
   })
   showToast('API 配置已保存', 'success')
   emit('close')
@@ -138,6 +143,11 @@ function handleSave() {
         <label class="text-sm font-medium">看视频用的 AI</label>
         <BaseSelect v-model="visionModel" :options="visionModelOptions" placeholder="选择视觉模型" />
         <span class="text-xs text-muted-foreground">用来分析你上传的视频画面</span>
+      </div>
+      <div class="flex flex-col gap-2">
+        <label class="text-sm font-medium">画参考图用的 AI</label>
+        <BaseSelect v-model="imageModel" :options="imageModelOptions" placeholder="选择图像模型" />
+        <span class="text-xs text-muted-foreground">用来为脚本分镜生成画面参考图</span>
       </div>
 
       <div class="flex flex-col gap-3 rounded-lg border bg-muted/30 p-4">

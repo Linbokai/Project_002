@@ -1,0 +1,31 @@
+---
+description: 新功能开发必须遵循的解耦原则
+alwaysApply: true
+---
+
+# 新功能模块解耦原则
+
+开发任何新功能时，必须确保模块间松耦合。
+
+## API 层
+
+- API 服务函数必须是**纯函数**：所有依赖（apiKey、model 等）通过参数传入，禁止导入 Store
+- 多个 API 模块共用的逻辑（请求头构建、错误处理、fetch 封装）必须抽取到共享基础层，禁止复制粘贴
+
+## Store 层
+
+- 新功能的 Store 只做**纯状态管理**（state + mutations），不包含 API 调用逻辑
+- 新 Store 禁止依赖其他功能模块的 Store（如 image-store 不依赖 chat-store）
+- API 调用的编排放在 Composable 中，由 Composable 桥接 Store 与 API
+
+## Composable 层
+
+- 作为**桥接层**组合 Store + API + 其他 Store（如 settings-store）
+- View 层通过 Composable 交互，不直接调用 API 或修改 Store state
+
+## View 层
+
+- 组件只通过 Composable 操作数据，禁止直接导入 API 服务
+- 新功能的 UI 组件禁止导入其他功能模块的组件或 Store
+- 纯展示组件（如预览、卡片）只接收 props，保持可复用性
+- 跨功能的 UI 状态（如 tab 切换）就近用 `ref` 管理 + `v-model` 传递，不引入额外 Store

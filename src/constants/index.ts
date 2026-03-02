@@ -25,7 +25,14 @@ export const API_DEFAULTS = {
   SEARCH_MODEL: 'perplexity/sonar-pro-search',
   GEN_MODEL: 'deepseek/deepseek-v3.2',
   VISION_MODEL: 'qwen/qwen3.5-35b-a3b',
+  IMAGE_MODEL: 'google/gemini-3.1-flash-image-preview',
   TEMPERATURE: 0.85,
   MAX_TOKENS: 4096,
   MAX_TOKENS_VISION: 8192,
+} as const
+
+export const IMAGE_DEFAULTS = {
+  ASPECT_RATIO: '16:9' as const,
+  IMAGE_SIZE: '1K' as const,
+  MAX_REFERENCE_IMAGES: 3,
 } as const

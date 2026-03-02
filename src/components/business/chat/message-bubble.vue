@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import type { ChatMessage } from '@/models/types'
 import { MessageType } from '@/models/enums'
 import ScriptActions from './script-actions.vue'
+import ScriptShotRenderer from './script-shot-renderer.vue'
 import AnalysisActions from './analysis-actions.vue'
 import ScriptDirectionActions from './script-direction-actions.vue'
 import MarkdownContent from '@/components/ui/markdown-content.vue'
@@ -69,8 +70,13 @@ const gameName = computed(() => gameStore.currentGame?.name ?? '脚本')
       isUser && 'ml-auto bg-brand/10 text-foreground msg-user',
     ]"
   >
+    <ScriptShotRenderer
+      v-if="showScriptActions"
+      :content="message.content || ''"
+      :message-timestamp="message.timestamp"
+    />
     <MarkdownContent
-      v-if="useMarkdown"
+      v-else-if="useMarkdown"
       :content="message.content || ''"
     />
     <pre

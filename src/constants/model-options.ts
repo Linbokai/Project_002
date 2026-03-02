@@ -25,3 +25,10 @@ export const VISION_MODELS: ModelOption[] = [
   { id: 'openai/gpt-5.1', name: 'GPT-5.1', description: '画面理解能力强' },
   { id: 'anthropic/claude-sonnet-4.6', name: 'Claude Sonnet 4.6', description: '图文分析细致' },
 ]
+
+export const IMAGE_MODELS: ModelOption[] = [
+  { id: 'google/gemini-3.1-flash-image-preview', name: 'Gemini 3.1 Flash Image（推荐）', description: 'Nano Banana 2，支持文+图输出，性价比高' },
+  { id: 'black-forest-labs/flux.2-pro', name: 'Flux 2 Pro', description: '高质量图像生成，细节丰富' },
+  { id: 'black-forest-labs/flux.2-flex', name: 'Flux 2 Flex', description: '灵活的图像生成，速度较快' },
+  { id: 'google/gemini-2.5-flash-image-preview', name: 'Gemini 2.5 Flash Image', description: 'Google 图像生成，稳定可靠' },
+]

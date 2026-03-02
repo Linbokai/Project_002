@@ -7,9 +7,19 @@ export type {
   CollabIPConfig,
   GenerationConfig,
   ApiConfig,
+  KeyInfo,
 } from './config'
 export type {
   GameplayPreset,
   GameplayTopic,
   CustomGameplay,
 } from './gameplay'
+export type {
+  ImageAspectRatio,
+  ImageSize,
+  ImageConfig,
+  GeneratedImage,
+  VisualContext,
+  ShotImageKey,
+  ScriptKey,
+} from './image'
