@@ -20,8 +20,8 @@ export const GEN_MODELS: ModelOption[] = [
 ]
 
 export const VISION_MODELS: ModelOption[] = [
-  { id: 'google/gemini-3-flash-preview', name: 'Gemini 3 Flash（推荐）', description: '视频分析效果好，免费额度多' },
+  { id: 'qwen/qwen3.5-35b-a3b', name: 'Qwen3.5 35B A3B（推荐）', description: '价格最便宜的视觉模型' },
+  { id: 'google/gemini-3-flash-preview', name: 'Gemini 3 Flash', description: '视频分析效果好，免费额度多' },
   { id: 'openai/gpt-5.1', name: 'GPT-5.1', description: '画面理解能力强' },
   { id: 'anthropic/claude-sonnet-4.6', name: 'Claude Sonnet 4.6', description: '图文分析细致' },
-  { id: 'qwen/qwen3.5-35b-a3b', name: 'Qwen3.5 35B A3B', description: '价格最便宜的视觉模型' },
 ]

@@ -23,8 +23,8 @@ export const VIDEO_FRAME_EXTRACTION = {
 export const API_DEFAULTS = {
   BASE_URL: 'https://openrouter.ai/api/v1',
   SEARCH_MODEL: 'perplexity/sonar-pro-search',
-  GEN_MODEL: 'deepseek/deepseek-chat',
-  VISION_MODEL: 'google/gemini-2.5-flash-preview',
+  GEN_MODEL: 'deepseek/deepseek-v3.2',
+  VISION_MODEL: 'qwen/qwen3.5-35b-a3b',
   TEMPERATURE: 0.85,
   MAX_TOKENS: 4096,
   MAX_TOKENS_VISION: 8192,
