@@ -48,10 +48,6 @@ function handleOpenApiSettings() {
   apiSettingsOpen.value = true
 }
 
-function handleOpenSettings() {
-  apiSettingsOpen.value = true
-}
-
 function handleOpenGameManager() {
   gameManagerOpen.value = true
 }
@@ -81,7 +77,7 @@ function handleLoadSession(id: string) {
           @open-game-manager="handleOpenGameManager"
         />
         <ChatArea
-          @open-settings="handleOpenSettings"
+          @open-settings="handleOpenApiSettings"
           @open-game-manager="handleOpenGameManager"
         />
         <ChatInput />

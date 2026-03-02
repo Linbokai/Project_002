@@ -1,4 +1,4 @@
-import { API_DEFAULTS } from '@/constants'
+import { API_DEFAULTS, APP_NAME } from '@/constants'
 import type { ApiConfig } from '@/models/types'
 
 export interface StreamCallbacks {
@@ -26,7 +26,7 @@ function buildHeaders(config: ApiConfig): Record<string, string> {
     'Content-Type': 'application/json',
     'Authorization': `Bearer ${config.openRouterKey}`,
     'HTTP-Referer': window.location.origin,
-    'X-Title': 'Script Workbench',
+    'X-Title': APP_NAME,
   }
 }
 

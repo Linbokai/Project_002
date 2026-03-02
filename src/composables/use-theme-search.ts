@@ -5,6 +5,7 @@ import { chatCompletion } from '@/services/api/openrouter-api'
 import type { ThemeTopic } from '@/models/types'
 import { SearchPlatform } from '@/models/enums'
 import { generateId } from '@/utils'
+import { parseJsonArray, safeParseJsonArray } from '@/utils/json-parser'
 
 const PLATFORM_LABELS: Record<SearchPlatform, string> = {
   [SearchPlatform.Douyin]: '抖音',
@@ -77,13 +78,7 @@ export function useThemeSearch() {
         stream: false,
       })
 
-      let parsed: unknown
-      const cleaned = response.replace(/^[\s\S]*?\[/, '[').replace(/\][\s\S]*$/, ']')
-      try {
-        parsed = JSON.parse(cleaned)
-      } catch {
-        parsed = JSON.parse(response)
-      }
+      const parsed = parseJsonArray(response)
       const topics = parseToThemeTopics(parsed)
       themeRadarStore.setSearchResults(topics)
     } finally {
@@ -96,12 +91,8 @@ export function useThemeSearch() {
   }
 
   function importManualResult(text: string): ThemeTopic[] {
-    let parsed: unknown
-    try {
-      parsed = JSON.parse(text)
-    } catch {
-      return []
-    }
+    const parsed = safeParseJsonArray(text)
+    if (!parsed.length) return []
     const topics = parseToThemeTopics(parsed)
     themeRadarStore.setSearchResults(topics)
     return topics

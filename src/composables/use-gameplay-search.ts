@@ -5,6 +5,7 @@ import { chatCompletion } from '@/services/api/openrouter-api'
 import type { GameplayTopic } from '@/models/types'
 import { SearchRegion } from '@/models/enums'
 import { generateId } from '@/utils'
+import { parseJsonArray, safeParseJsonArray } from '@/utils/json-parser'
 
 const SEARCH_PROMPT_DOMESTIC = `你是一位资深国内手游市场分析师，精通国内买量创意趋势。
 
@@ -93,13 +94,7 @@ export function useGameplaySearch() {
         stream: false,
       })
 
-      let parsed: unknown
-      const cleaned = response.replace(/^[\s\S]*?\[/, '[').replace(/\][\s\S]*$/, ']')
-      try {
-        parsed = JSON.parse(cleaned)
-      } catch {
-        parsed = JSON.parse(response)
-      }
+      const parsed = parseJsonArray(response)
       const topics = parseToGameplayTopics(parsed)
       gameplayRadarStore.setSearchResults(region, topics)
     } finally {
@@ -112,12 +107,8 @@ export function useGameplaySearch() {
   }
 
   function importManualResult(text: string): GameplayTopic[] {
-    let parsed: unknown
-    try {
-      parsed = JSON.parse(text)
-    } catch {
-      return []
-    }
+    const parsed = safeParseJsonArray(text)
+    if (!parsed.length) return []
     const topics = parseToGameplayTopics(parsed)
     gameplayRadarStore.setSearchResults(gameplayRadarStore.region, topics)
     return topics

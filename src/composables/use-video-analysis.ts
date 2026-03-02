@@ -1,5 +1,5 @@
 import { ref, unref } from 'vue'
-import type { VideoMetrics } from '@/models/types'
+import type { VideoMetrics, ApiConfig } from '@/models/types'
 import { useChatStore } from '@/stores/chat-store'
 import { useConfigStore } from '@/stores/config-store'
 import { useGameStore } from '@/stores/game-store'
@@ -14,13 +14,8 @@ import {
 import { buildSystemPrompt } from '@/services/helpers/script-prompt-builder'
 import { MessageType } from '@/models/enums'
 import { useToast } from '@/composables/use-toast'
+import { useVideoFrames } from '@/composables/use-video-frames'
 
-const FPS = 2
-const MAX_FRAMES = 120
-const MAX_WIDTH = 960
-const JPEG_QUALITY = 0.75
-
-const progress = ref(0)
 const analyzing = ref(false)
 const videoFile = ref<File | null>(null)
 const lastMetrics = ref<VideoMetrics | undefined>()
@@ -33,77 +28,21 @@ export function useVideoAnalysis() {
   const gameStore = useGameStore()
   const settingsStore = useSettingsStore()
   const { showToast } = useToast()
+  const { extractFrames, progress } = useVideoFrames()
 
-  async function extractFrames(video: File): Promise<string[]> {
-    return new Promise((resolve, reject) => {
-      const url = URL.createObjectURL(video)
-      const videoEl = document.createElement('video')
-      videoEl.muted = true
-      videoEl.playsInline = true
-      videoEl.crossOrigin = 'anonymous'
-
-      videoEl.onloadedmetadata = () => {
-        const duration = videoEl.duration
-        const totalFrames = Math.min(
-          Math.floor(duration * FPS),
-          MAX_FRAMES,
-        )
-        const frames: string[] = []
-        const canvas = document.createElement('canvas')
-        const ctx = canvas.getContext('2d')
-        if (!ctx) {
-          URL.revokeObjectURL(url)
-          reject(new Error('无法创建 canvas context'))
-          return
-        }
-
-        let captured = 0
-        const captureNext = (t: number) => {
-          if (captured >= totalFrames) {
-            URL.revokeObjectURL(url)
-            videoEl.src = ''
-            progress.value = 100
-            resolve(frames)
-            return
-          }
-          videoEl.currentTime = t
-        }
-
-        videoEl.onseeked = () => {
-          let w = videoEl.videoWidth
-          let h = videoEl.videoHeight
-          if (w > MAX_WIDTH) {
-            h = Math.round((h * MAX_WIDTH) / w)
-            w = MAX_WIDTH
-          }
-          canvas.width = w
-          canvas.height = h
-          ctx.drawImage(videoEl, 0, 0, w, h)
-          const dataUrl = canvas.toDataURL('image/jpeg', JPEG_QUALITY)
-          frames.push(dataUrl)
-          captured++
-          progress.value = Math.round((captured / totalFrames) * 100)
-          const nextT = (captured / totalFrames) * duration
-          captureNext(nextT)
-        }
-
-        videoEl.onerror = () => {
-          URL.revokeObjectURL(url)
-          reject(new Error('视频加载失败'))
-        }
-
-        captureNext(0)
-      }
-
-      videoEl.src = url
-    })
+  function requireApiKey(): ApiConfig | null {
+    const config = unref(settingsStore.config)
+    if (!config.openRouterKey) {
+      showToast('请先配置 API Key', 'destructive')
+      return null
+    }
+    return config
   }
 
   async function analyzeVideo(file: File, metrics?: VideoMetrics): Promise<void> {
-    const config = unref(settingsStore.config)
-    if (!config.openRouterKey) {
+    const config = requireApiKey()
+    if (!config) {
       chatStore.failGeneration('请先配置 API Key')
-      showToast('请先配置 API Key', 'destructive')
       return
     }
 
@@ -111,7 +50,6 @@ export function useVideoAnalysis() {
     videoFile.value = file
     lastMetrics.value = metrics
     hasAnalysisResult.value = false
-    progress.value = 0
 
     try {
       const frames = await extractFrames(file)
@@ -165,11 +103,8 @@ export function useVideoAnalysis() {
   }
 
   async function requestOptimization(goal: string): Promise<void> {
-    const config = unref(settingsStore.config)
-    if (!config.openRouterKey) {
-      showToast('请先配置 API Key', 'destructive')
-      return
-    }
+    const config = requireApiKey()
+    if (!config) return
 
     const prompt = buildVideoOptimizationPrompt(goal, lastMetrics.value)
 
@@ -203,11 +138,8 @@ export function useVideoAnalysis() {
   }
 
   async function generateScriptDirections(): Promise<void> {
-    const config = unref(settingsStore.config)
-    if (!config.openRouterKey) {
-      showToast('请先配置 API Key', 'destructive')
-      return
-    }
+    const config = requireApiKey()
+    if (!config) return
 
     const genConfig = unref(configStore.config)
     const game = unref(gameStore.currentGame)
@@ -248,11 +180,8 @@ export function useVideoAnalysis() {
   }
 
   async function generateDetailedScript(directionNumber: number): Promise<void> {
-    const config = unref(settingsStore.config)
-    if (!config.openRouterKey) {
-      showToast('请先配置 API Key', 'destructive')
-      return
-    }
+    const config = requireApiKey()
+    if (!config) return
 
     const genConfig = unref(configStore.config)
     const game = unref(gameStore.currentGame)

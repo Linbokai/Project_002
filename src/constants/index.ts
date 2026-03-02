@@ -13,6 +13,13 @@ export const STORAGE_KEYS = {
 
 export const HISTORY_MAX = 30
 
+export const VIDEO_FRAME_EXTRACTION = {
+  FPS: 2,
+  MAX_FRAMES: 120,
+  MAX_WIDTH: 960,
+  JPEG_QUALITY: 0.75,
+} as const
+
 export const API_DEFAULTS = {
   BASE_URL: 'https://openrouter.ai/api/v1',
   SEARCH_MODEL: 'perplexity/sonar-pro-search',
