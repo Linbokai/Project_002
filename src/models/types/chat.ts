@@ -8,7 +8,8 @@ export interface ChatMessage {
 }
 
 export interface VideoMetrics {
-  roi?: number
+  roi3d?: number
+  roi7d?: number
   spend?: number
   ctr?: number
   cvr?: number

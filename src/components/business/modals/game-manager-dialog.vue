@@ -135,10 +135,11 @@ function truncate(text: string, maxLen: number) {
 
       <div class="flex flex-col gap-3 rounded-lg border bg-muted/30 p-4">
         <div class="text-sm font-medium">{{ isEditing ? '编辑游戏' : '添加游戏' }}</div>
+        <p class="text-xs text-muted-foreground">填写越详细，AI 生成的脚本越贴合你的游戏</p>
         <div class="flex flex-col gap-3">
-          <BaseInput v-model="name" placeholder="游戏名称" />
-          <BaseInput v-model="genre" placeholder="游戏类型" />
-          <BaseTextarea v-model="sell" placeholder="核心卖点" :rows="2" />
+          <BaseInput v-model="name" placeholder="如：王者荣耀、明日方舟" />
+          <BaseInput v-model="genre" placeholder="如：MOBA、SLG、卡牌、RPG、休闲" />
+          <BaseTextarea v-model="sell" placeholder="如：万人国战、自由交易、超多英雄可收集" :rows="2" />
           <div class="flex gap-2">
             <BaseButton
               v-if="isEditing"

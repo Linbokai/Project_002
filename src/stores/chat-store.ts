@@ -8,6 +8,7 @@ export const useChatStore = defineStore('chat', () => {
   const status = ref<GenerationStatus>(GenerationStatus.Idle)
   const currentStreamText = ref('')
   const errorMessage = ref('')
+  const currentSessionId = ref<string | null>(null)
 
   function addMessage(message: ChatMessage) {
     messages.value.push(message)
@@ -47,6 +48,7 @@ export const useChatStore = defineStore('chat', () => {
     status.value = GenerationStatus.Idle
     currentStreamText.value = ''
     errorMessage.value = ''
+    currentSessionId.value = null
   }
 
   function getMessagesForApi(): Array<{ role: string; content: string }> {
@@ -64,6 +66,7 @@ export const useChatStore = defineStore('chat', () => {
     status,
     currentStreamText,
     errorMessage,
+    currentSessionId,
     addMessage,
     appendToStream,
     startGeneration,

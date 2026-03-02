@@ -4,6 +4,9 @@ import { useChatStore } from '@/stores/chat-store'
 import { useConfigStore } from '@/stores/config-store'
 import { useGameStore } from '@/stores/game-store'
 import { useSettingsStore } from '@/stores/settings-store'
+import { useHistoryStore } from '@/stores/history-store'
+import { useThemeRadarStore } from '@/stores/theme-radar-store'
+import { useGameplayRadarStore } from '@/stores/gameplay-radar-store'
 import { streamChat } from '@/services/api/openrouter-api'
 import {
   buildVideoAnalysisPrompt,
@@ -12,7 +15,7 @@ import {
   buildDirectionDetailPrompt,
 } from '@/services/helpers/analysis-prompt-builder'
 import { buildSystemPrompt } from '@/services/helpers/script-prompt-builder'
-import { MessageType } from '@/models/enums'
+import { MessageType, ProductionDirection } from '@/models/enums'
 import { useToast } from '@/composables/use-toast'
 import { useVideoFrames } from '@/composables/use-video-frames'
 
@@ -27,8 +30,31 @@ export function useVideoAnalysis() {
   const configStore = useConfigStore()
   const gameStore = useGameStore()
   const settingsStore = useSettingsStore()
+  const historyStore = useHistoryStore()
+  const themeRadarStore = useThemeRadarStore()
+  const gameplayRadarStore = useGameplayRadarStore()
   const { showToast } = useToast()
   const { extractFrames, progress } = useVideoFrames()
+
+  function saveSession() {
+    const msgs = [...chatStore.messages]
+    if (msgs.length === 0) return
+
+    const gameName = gameStore.currentGame?.name ?? ''
+    const isUe = configStore.config.direction === ProductionDirection.UeGameplay
+    const themes = isUe
+      ? gameplayRadarStore.getAllSelectedNames().join('、')
+      : themeRadarStore.getAllSelectedNames().join('、')
+    const firstUser = msgs.find((m) => m.role === 'user')
+    const preview = firstUser?.content.slice(0, 80) ?? ''
+
+    if (chatStore.currentSessionId) {
+      historyStore.updateSession(chatStore.currentSessionId, { messages: msgs, preview, themes })
+    } else {
+      const id = historyStore.addSession({ messages: msgs, gameName, themes, preview })
+      chatStore.currentSessionId = id
+    }
+  }
 
   function requireApiKey(): ApiConfig | null {
     const config = unref(settingsStore.config)
@@ -86,6 +112,7 @@ export function useVideoAnalysis() {
           onDone: () => {
             chatStore.finishGeneration()
             hasAnalysisResult.value = true
+            saveSession()
           },
           onError: (err) => {
             chatStore.failGeneration(err)
@@ -128,7 +155,10 @@ export function useVideoAnalysis() {
       },
       {
         onChunk: (chunk) => chatStore.appendToStream(chunk),
-        onDone: () => chatStore.finishGeneration(),
+        onDone: () => {
+          chatStore.finishGeneration()
+          saveSession()
+        },
         onError: (err) => {
           chatStore.failGeneration(err)
           showToast(err, 'destructive')
@@ -170,6 +200,7 @@ export function useVideoAnalysis() {
         onDone: () => {
           chatStore.finishGeneration()
           hasDirectionsResult.value = true
+          saveSession()
         },
         onError: (err) => {
           chatStore.failGeneration(err)
@@ -215,7 +246,10 @@ export function useVideoAnalysis() {
       },
       {
         onChunk: (chunk) => chatStore.appendToStream(chunk),
-        onDone: () => chatStore.finishGeneration(),
+        onDone: () => {
+          chatStore.finishGeneration()
+          saveSession()
+        },
         onError: (err) => {
           chatStore.failGeneration(err)
           showToast(err, 'destructive')

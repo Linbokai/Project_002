@@ -42,7 +42,8 @@ function formatMetricsBlock(metrics?: VideoMetrics): string {
   if (!metrics) return ''
 
   const lines: string[] = ['\n\n## 投放数据（请结合数据进行针对性分析）']
-  if (metrics.roi != null) lines.push(`- ROI：${metrics.roi}`)
+  if (metrics.roi3d != null) lines.push(`- 3日ROI：${metrics.roi3d}`)
+  if (metrics.roi7d != null) lines.push(`- 7日ROI：${metrics.roi7d}`)
   if (metrics.spend != null) lines.push(`- 消耗：${metrics.spend} 元`)
   if (metrics.ctr != null) lines.push(`- 点击率(CTR)：${metrics.ctr}%`)
   if (metrics.cvr != null) lines.push(`- 转化率(CVR)：${metrics.cvr}%`)
@@ -62,7 +63,7 @@ export function buildVideoOptimizationPrompt(
 ): string {
   const metricsRef = metrics
     ? `\n当前数据：${Object.entries(metrics).filter(([, v]) => v != null).map(([k, v]) => {
-        const labels: Record<string, string> = { roi: 'ROI', spend: '消耗', ctr: 'CTR', cvr: 'CVR', cpa: 'CPA', completionRate: '完播率' }
+        const labels: Record<string, string> = { roi3d: '3日ROI', roi7d: '7日ROI', spend: '消耗', ctr: 'CTR', cvr: 'CVR', cpa: 'CPA', completionRate: '完播率' }
         const units: Record<string, string> = { spend: '元', ctr: '%', cvr: '%', cpa: '元', completionRate: '%' }
         return `${labels[k] ?? k} ${v}${units[k] ?? ''}`
       }).join(' / ')}`
@@ -127,7 +128,7 @@ export function buildScriptDirectionsPrompt(
   const configCtx = formatConfigContext(config, game)
   const metricsRef = metrics
     ? `\n\n投放数据：${Object.entries(metrics).filter(([, v]) => v != null).map(([k, v]) => {
-        const labels: Record<string, string> = { roi: 'ROI', spend: '消耗', ctr: 'CTR', cvr: 'CVR', cpa: 'CPA', completionRate: '完播率' }
+        const labels: Record<string, string> = { roi3d: '3日ROI', roi7d: '7日ROI', spend: '消耗', ctr: 'CTR', cvr: 'CVR', cpa: 'CPA', completionRate: '完播率' }
         const units: Record<string, string> = { spend: '元', ctr: '%', cvr: '%', cpa: '元', completionRate: '%' }
         return `${labels[k] ?? k} ${v}${units[k] ?? ''}`
       }).join(' / ')}`

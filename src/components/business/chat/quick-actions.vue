@@ -31,31 +31,34 @@ function handleHero() {
       variant="ghost"
       size="sm"
       :disabled="disabled"
-      aria-label="换个方向"
+      title="随机切换一个新的脚本创意方向"
+      aria-label="换个创意角度"
       @click="handleReroll"
     >
       <RefreshCw :size="14" />
-      换个方向
+      换个创意角度
     </BaseButton>
     <BaseButton
       variant="ghost"
       size="sm"
       :disabled="disabled"
-      aria-label="钩子推荐"
+      title="推荐视频前3秒的注意力抓手"
+      aria-label="推荐开头钩子"
       @click="handleHooks"
     >
       <Anchor :size="14" />
-      钩子推荐
+      推荐开头钩子
     </BaseButton>
     <BaseButton
       variant="ghost"
       size="sm"
       :disabled="disabled"
-      aria-label="推荐主角"
+      title="推荐适合这个游戏的出镜人设"
+      aria-label="推荐视频主角"
       @click="handleHero"
     >
       <User :size="14" />
-      推荐主角
+      推荐视频主角
     </BaseButton>
   </div>
 </template>

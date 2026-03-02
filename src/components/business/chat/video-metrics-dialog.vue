@@ -21,7 +21,8 @@ const showMetrics = ref(false)
 const fileInput = ref<HTMLInputElement | null>(null)
 
 const metrics = reactive({
-  roi: '',
+  roi3d: '',
+  roi7d: '',
   spend: '',
   ctr: '',
   cvr: '',
@@ -36,7 +37,7 @@ watch(
       selectedFile.value = null
       fileName.value = ''
       showMetrics.value = false
-      Object.assign(metrics, { roi: '', spend: '', ctr: '', cvr: '', cpa: '', completionRate: '' })
+      Object.assign(metrics, { roi3d: '', roi7d: '', spend: '', ctr: '', cvr: '', cpa: '', completionRate: '' })
     }
   },
 )
@@ -58,7 +59,8 @@ function parseMetrics(): VideoMetrics | undefined {
   const parsed: VideoMetrics = {}
   let hasValue = false
 
-  if (metrics.roi) { parsed.roi = Number(metrics.roi); hasValue = true }
+  if (metrics.roi3d) { parsed.roi3d = Number(metrics.roi3d); hasValue = true }
+  if (metrics.roi7d) { parsed.roi7d = Number(metrics.roi7d); hasValue = true }
   if (metrics.spend) { parsed.spend = Number(metrics.spend); hasValue = true }
   if (metrics.ctr) { parsed.ctr = Number(metrics.ctr); hasValue = true }
   if (metrics.cvr) { parsed.cvr = Number(metrics.cvr); hasValue = true }
@@ -110,8 +112,12 @@ function handleSubmit() {
       <Transition name="metrics-expand">
         <div v-if="showMetrics" class="grid grid-cols-2 gap-3">
           <div class="flex flex-col gap-1">
-            <label class="text-xs text-muted-foreground">ROI</label>
-            <BaseInput v-model="metrics.roi" type="number" placeholder="如 1.5" />
+            <label class="text-xs text-muted-foreground">3日ROI</label>
+            <BaseInput v-model="metrics.roi3d" type="number" placeholder="如 0.8" />
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-xs text-muted-foreground">7日ROI</label>
+            <BaseInput v-model="metrics.roi7d" type="number" placeholder="如 1.5" />
           </div>
           <div class="flex flex-col gap-1">
             <label class="text-xs text-muted-foreground">消耗（元）</label>

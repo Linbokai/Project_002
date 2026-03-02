@@ -2,16 +2,26 @@
 import { ref, computed } from 'vue'
 import type { VideoMetrics } from '@/models/types'
 import BaseButton from '@/components/ui/base-button.vue'
+import BaseSelect from '@/components/ui/base-select.vue'
 import VideoMetricsDialog from './video-metrics-dialog.vue'
 import { Send, Sparkles, Video } from 'lucide-vue-next'
 import { useChat } from '@/composables/use-chat'
 import { useVideoAnalysis } from '@/composables/use-video-analysis'
+import { useModelStatus } from '@/composables/use-model-status'
 import { useConfigStore } from '@/stores/config-store'
+import { useSettingsStore } from '@/stores/settings-store'
 import { ProductionDirection } from '@/models/enums'
+import { SEARCH_MODELS, GEN_MODELS, VISION_MODELS } from '@/constants/model-options'
 
 const { sendMessage, generateScript, isGenerating } = useChat()
 const { analyzeVideo, analyzing, progress } = useVideoAnalysis()
+const { searchStatus, genStatus, visionStatus } = useModelStatus()
 const configStore = useConfigStore()
+const settingsStore = useSettingsStore()
+
+const searchModelOptions = SEARCH_MODELS.map((m) => ({ value: m.id, label: m.name }))
+const genModelOptions = GEN_MODELS.map((m) => ({ value: m.id, label: m.name }))
+const visionModelOptions = VISION_MODELS.map((m) => ({ value: m.id, label: m.name }))
 const inputText = ref('')
 const showVideoDialog = ref(false)
 
@@ -54,27 +64,81 @@ async function handleVideoSubmit(file: File, metrics?: VideoMetrics) {
       </div>
       <span class="whitespace-nowrap text-xs text-muted-foreground">提取帧 {{ progress }}%</span>
     </div>
-    <div class="flex items-center gap-2">
+    <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
       <BaseButton
         variant="brand"
-        size="sm"
+        size="lg"
         :disabled="busy"
         :loading="isGenerating"
         @click="handleGenerate"
       >
-        <Sparkles v-if="!isGenerating" :size="14" />
+        <Sparkles v-if="!isGenerating" :size="16" />
         {{ generateLabel }}
       </BaseButton>
       <BaseButton
         variant="outline"
-        size="sm"
+        size="lg"
         :disabled="busy"
         :loading="analyzing"
         @click="openVideoDialog"
       >
-        <Video v-if="!analyzing" :size="14" />
+        <Video v-if="!analyzing" :size="16" />
         分析视频
       </BaseButton>
+      <div class="flex flex-1" />
+      <div class="flex flex-wrap items-center gap-x-2 gap-y-1.5">
+        <div class="flex items-center gap-1.5">
+          <span
+            :class="[
+              'h-2 w-2 shrink-0 rounded-full',
+              searchStatus === 'connected' ? 'bg-chart-2' : searchStatus === 'connecting' ? 'bg-chart-4 animate-pulse' : 'bg-destructive',
+            ]"
+            :title="searchStatus === 'connected' ? '已连接' : searchStatus === 'connecting' ? '连接中' : '未连接'"
+          />
+          <span class="shrink-0 text-xs text-muted-foreground">搜索</span>
+          <div class="w-40">
+            <BaseSelect
+              :model-value="settingsStore.config.searchModel"
+              :options="searchModelOptions"
+              @update:model-value="settingsStore.updateModel('search', $event)"
+            />
+          </div>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <span
+            :class="[
+              'h-2 w-2 shrink-0 rounded-full',
+              genStatus === 'connected' ? 'bg-chart-2' : genStatus === 'connecting' ? 'bg-chart-4 animate-pulse' : 'bg-destructive',
+            ]"
+            :title="genStatus === 'connected' ? '已连接' : genStatus === 'connecting' ? '连接中' : '未连接'"
+          />
+          <span class="shrink-0 text-xs text-muted-foreground">脚本</span>
+          <div class="w-40">
+            <BaseSelect
+              :model-value="settingsStore.config.genModel"
+              :options="genModelOptions"
+              @update:model-value="settingsStore.updateModel('gen', $event)"
+            />
+          </div>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <span
+            :class="[
+              'h-2 w-2 shrink-0 rounded-full',
+              visionStatus === 'connected' ? 'bg-chart-2' : visionStatus === 'connecting' ? 'bg-chart-4 animate-pulse' : 'bg-destructive',
+            ]"
+            :title="visionStatus === 'connected' ? '已连接' : visionStatus === 'connecting' ? '连接中' : '未连接'"
+          />
+          <span class="shrink-0 text-xs text-muted-foreground">视觉</span>
+          <div class="w-40">
+            <BaseSelect
+              :model-value="settingsStore.config.visionModel"
+              :options="visionModelOptions"
+              @update:model-value="settingsStore.updateModel('vision', $event)"
+            />
+          </div>
+        </div>
+      </div>
     </div>
     <div class="flex items-end gap-2">
       <textarea

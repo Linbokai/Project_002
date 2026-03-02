@@ -55,21 +55,23 @@ async function handleSeedance(lang: 'zh' | 'en') {
       variant="ghost"
       size="sm"
       class="h-7 px-2 text-xs"
-      aria-label="复制"
+      title="复制脚本内容到剪贴板"
+      aria-label="复制脚本"
       @click="handleCopy"
     >
       <Copy :size="12" />
-      {{ copied ? '已复制' : 'Copy' }}
+      {{ copied ? '已复制' : '复制脚本' }}
     </BaseButton>
     <BaseButton
       variant="ghost"
       size="sm"
       class="h-7 px-2 text-xs"
-      aria-label="下载"
+      title="下载脚本为文本文件"
+      aria-label="下载脚本"
       @click="handleDownload"
     >
       <Download :size="12" />
-      Download
+      下载脚本
     </BaseButton>
     <BaseButton
       variant="ghost"
@@ -77,11 +79,12 @@ async function handleSeedance(lang: 'zh' | 'en') {
       class="h-7 px-2 text-xs"
       :loading="seedanceZhLoading"
       :disabled="seedanceZhLoading || seedanceEnLoading"
-      aria-label="Seedance 中文"
+      title="将脚本转换为 Seedance 2.0 视频生成平台的提示词格式（中文）"
+      aria-label="转为视频提示词（中文）"
       @click="handleSeedance('zh')"
     >
       <Languages :size="12" />
-      Seedance中
+      转为视频提示词（中文）
     </BaseButton>
     <BaseButton
       variant="ghost"
@@ -89,23 +92,24 @@ async function handleSeedance(lang: 'zh' | 'en') {
       class="h-7 px-2 text-xs"
       :loading="seedanceEnLoading"
       :disabled="seedanceZhLoading || seedanceEnLoading"
-      aria-label="Seedance 英文"
+      title="将脚本转换为 Seedance 2.0 视频生成平台的提示词格式（英文）"
+      aria-label="转为视频提示词（英文）"
       @click="handleSeedance('en')"
     >
       <Languages :size="12" />
-      Seedance英
+      转为视频提示词（英文）
     </BaseButton>
     <BaseButton
       variant="ghost"
       size="sm"
       class="h-7 px-2 text-xs"
-      :title="safeMode ? '安全模式已开（点击关闭）' : '安全模式已关（点击开启）'"
+      title="开启后自动替换脚本中的暴力/敏感内容，适合平台审核严格的渠道"
       aria-label="切换安全模式"
       @click="toggleSafeMode"
     >
       <Shield v-if="safeMode" :size="12" />
       <ShieldOff v-else :size="12" />
-      {{ safeMode ? '安全模式开' : '安全模式关' }}
+      {{ safeMode ? '安全模式：开' : '安全模式：关' }}
     </BaseButton>
   </div>
 </template>

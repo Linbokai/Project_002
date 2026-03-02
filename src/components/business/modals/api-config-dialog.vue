@@ -106,25 +106,38 @@ function handleSave() {
 <template>
   <BaseDialog :open="open" @close="emit('close')">
     <template #header>
-      <h2 class="text-lg font-semibold">API 配置</h2>
+      <h2 class="text-lg font-semibold">AI 接口配置</h2>
+      <p class="text-sm text-muted-foreground">配置 AI 服务后即可使用脚本生成和视频分析功能</p>
     </template>
 
     <div class="flex flex-col gap-4">
       <div class="flex flex-col gap-2">
-        <label class="text-sm font-medium">OpenRouter API Key</label>
-        <BaseInput v-model="apiKey" type="password" placeholder="请输入 API Key" />
+        <label class="text-sm font-medium">AI 接口密钥</label>
+        <BaseInput v-model="apiKey" type="password" placeholder="请输入从 OpenRouter 获取的 API Key" />
+        <div class="flex items-center gap-1 text-xs text-muted-foreground">
+          <span>这是连接 AI 服务的密钥，从 OpenRouter 网站免费注册获取</span>
+          <a
+            href="https://openrouter.ai/keys"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="text-brand underline hover:text-brand/80"
+          >前往获取 →</a>
+        </div>
       </div>
       <div class="flex flex-col gap-2">
-        <label class="text-sm font-medium">搜索模型</label>
+        <label class="text-sm font-medium">搜索热点用的 AI</label>
         <BaseSelect v-model="searchModel" :options="searchModelOptions" placeholder="选择搜索模型" />
+        <span class="text-xs text-muted-foreground">用来搜索网上的热门主题和玩法</span>
       </div>
       <div class="flex flex-col gap-2">
-        <label class="text-sm font-medium">生成模型</label>
+        <label class="text-sm font-medium">写脚本用的 AI</label>
         <BaseSelect v-model="genModel" :options="genModelOptions" placeholder="选择生成模型" />
+        <span class="text-xs text-muted-foreground">用来生成买量视频脚本，推荐选带"推荐"标记的</span>
       </div>
       <div class="flex flex-col gap-2">
-        <label class="text-sm font-medium">视觉模型</label>
+        <label class="text-sm font-medium">看视频用的 AI</label>
         <BaseSelect v-model="visionModel" :options="visionModelOptions" placeholder="选择视觉模型" />
+        <span class="text-xs text-muted-foreground">用来分析你上传的视频画面</span>
       </div>
 
       <div class="flex flex-col gap-3 rounded-lg border bg-muted/30 p-4">

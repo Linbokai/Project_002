@@ -37,9 +37,17 @@ export const useHistoryStore = defineStore('history', () => {
     persist()
   }
 
+  function updateSession(id: string, patch: Partial<Pick<ChatSession, 'messages' | 'preview' | 'themes'>>) {
+    const session = sessions.value.find((s) => s.id === id)
+    if (session) {
+      Object.assign(session, patch)
+      persist()
+    }
+  }
+
   function getSession(id: string): ChatSession | undefined {
     return sessions.value.find((s) => s.id === id)
   }
 
-  return { sessions, addSession, removeSession, clearAll, getSession }
+  return { sessions, addSession, updateSession, removeSession, clearAll, getSession }
 })

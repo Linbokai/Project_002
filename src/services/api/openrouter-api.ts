@@ -26,7 +26,7 @@ function buildHeaders(config: ApiConfig): Record<string, string> {
     'Content-Type': 'application/json',
     'Authorization': `Bearer ${config.openRouterKey}`,
     'HTTP-Referer': window.location.origin,
-    'X-Title': APP_NAME,
+    'X-Title': encodeURIComponent(APP_NAME),
   }
 }
 

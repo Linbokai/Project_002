@@ -29,5 +29,10 @@ export const useSettingsStore = defineStore('settings', () => {
     }
   }
 
-  return { config, hasApiKey, updateConfig, getModelForTask }
+  function updateModel(task: 'search' | 'gen' | 'vision', modelId: string) {
+    const keyMap = { search: 'searchModel', gen: 'genModel', vision: 'visionModel' } as const
+    updateConfig({ [keyMap[task]]: modelId })
+  }
+
+  return { config, hasApiKey, updateConfig, getModelForTask, updateModel }
 })

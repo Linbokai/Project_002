@@ -5,23 +5,23 @@ export interface ModelOption {
 }
 
 export const SEARCH_MODELS: ModelOption[] = [
-  { id: 'perplexity/sonar-pro-search', name: 'Sonar Pro Search', description: '多步推理联网搜索' },
-  { id: 'perplexity/sonar-pro', name: 'Sonar Pro', description: '联网搜索（稳定）' },
-  { id: 'google/gemini-3-flash-preview', name: 'Gemini 3 Flash', description: '支持联网搜索｜1M上下文' },
-  { id: 'deepseek/deepseek-r1', name: 'DeepSeek R1', description: '深度推理搜索' },
+  { id: 'perplexity/sonar-pro-search', name: 'Sonar Pro Search（推荐）', description: '搜索准确，支持多步推理' },
+  { id: 'perplexity/sonar-pro', name: 'Sonar Pro', description: '搜索稳定，速度快' },
+  { id: 'google/gemini-3-flash-preview', name: 'Gemini 3 Flash', description: '免费额度多，速度快' },
+  { id: 'deepseek/deepseek-r1', name: 'DeepSeek R1', description: '搜索深度好，但速度较慢' },
 ]
 
 export const GEN_MODELS: ModelOption[] = [
-  { id: 'deepseek/deepseek-v3.2', name: 'DeepSeek V3.2', description: '性价比之王｜164K上下文' },
-  { id: 'anthropic/claude-sonnet-4.6', name: 'Claude Sonnet 4.6', description: '创意质量高｜1M上下文' },
-  { id: 'google/gemini-3-flash-preview', name: 'Gemini 3 Flash', description: '快速生成｜1M上下文' },
-  { id: 'openai/gpt-5.1', name: 'GPT-5.1', description: '综合能力强｜400K上下文' },
-  { id: 'qwen/qwen3-max', name: 'Qwen3 Max', description: '中文优化｜262K上下文' },
+  { id: 'deepseek/deepseek-v3.2', name: 'DeepSeek V3.2（推荐）', description: '性价比最高，中文效果好' },
+  { id: 'anthropic/claude-sonnet-4.6', name: 'Claude Sonnet 4.6', description: '创意质量最好，价格稍贵' },
+  { id: 'google/gemini-3-flash-preview', name: 'Gemini 3 Flash', description: '速度最快，免费额度多' },
+  { id: 'openai/gpt-5.1', name: 'GPT-5.1', description: '综合能力强，价格适中' },
+  { id: 'qwen/qwen3-max', name: 'Qwen3 Max', description: '中文理解优秀，价格便宜' },
 ]
 
 export const VISION_MODELS: ModelOption[] = [
-  { id: 'google/gemini-3-flash-preview', name: 'Gemini 3 Flash', description: '视觉分析推荐｜1M上下文' },
-  { id: 'openai/gpt-5.1', name: 'GPT-5.1', description: '多模态理解强｜400K上下文' },
-  { id: 'anthropic/claude-sonnet-4.6', name: 'Claude Sonnet 4.6', description: '图文理解｜1M上下文' },
-  { id: 'qwen/qwen3.5-35b-a3b', name: 'Qwen3.5 35B A3B', description: '轻量视觉模型｜高性价比' },
+  { id: 'google/gemini-3-flash-preview', name: 'Gemini 3 Flash（推荐）', description: '视频分析效果好，免费额度多' },
+  { id: 'openai/gpt-5.1', name: 'GPT-5.1', description: '画面理解能力强' },
+  { id: 'anthropic/claude-sonnet-4.6', name: 'Claude Sonnet 4.6', description: '图文分析细致' },
+  { id: 'qwen/qwen3.5-35b-a3b', name: 'Qwen3.5 35B A3B', description: '价格最便宜的视觉模型' },
 ]
