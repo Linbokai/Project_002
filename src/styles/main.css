@@ -152,3 +152,105 @@ body {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: oklch(var(--border)); border-radius: 9999px; }
 ::-webkit-scrollbar-thumb:hover { background: oklch(var(--muted-foreground)); }
+
+/* Prose — markdown content typography */
+.prose {
+  font-size: 0.875rem;
+  line-height: 1.7;
+  color: oklch(var(--card-foreground));
+}
+
+.prose :first-child { margin-top: 0; }
+.prose :last-child { margin-bottom: 0; }
+
+.prose h1,
+.prose h2,
+.prose h3 {
+  font-weight: 600;
+  line-height: 1.35;
+  margin-top: 1.25em;
+  margin-bottom: 0.4em;
+  color: oklch(var(--foreground));
+}
+
+.prose h1 { font-size: 1.2em; }
+.prose h2 {
+  font-size: 1.05em;
+  padding-bottom: 0.25em;
+  border-bottom: 1px solid oklch(var(--border));
+}
+.prose h3 { font-size: 0.95em; }
+
+.prose p {
+  margin-top: 0.45em;
+  margin-bottom: 0.45em;
+}
+
+.prose ul,
+.prose ol {
+  padding-left: 1.4em;
+  margin-top: 0.35em;
+  margin-bottom: 0.35em;
+}
+.prose ul { list-style-type: disc; }
+.prose ol { list-style-type: decimal; }
+.prose li { margin-top: 0.15em; margin-bottom: 0.15em; }
+.prose li > ul,
+.prose li > ol { margin-top: 0.1em; margin-bottom: 0.1em; }
+
+.prose strong {
+  font-weight: 600;
+  color: oklch(var(--foreground));
+}
+
+.prose em { font-style: italic; }
+
+.prose hr {
+  border: none;
+  border-top: 1px solid oklch(var(--border));
+  margin: 1em 0;
+}
+
+.prose code {
+  font-size: 0.85em;
+  padding: 0.15em 0.35em;
+  border-radius: 0.25rem;
+  background: oklch(var(--muted));
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.prose pre {
+  padding: 0.75em 1em;
+  border-radius: 0.375rem;
+  background: oklch(var(--muted));
+  overflow-x: auto;
+  margin: 0.5em 0;
+}
+.prose pre code {
+  padding: 0;
+  background: none;
+}
+
+.prose blockquote {
+  border-left: 3px solid oklch(var(--brand));
+  padding-left: 0.75em;
+  margin: 0.5em 0;
+  color: oklch(var(--muted-foreground));
+}
+
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.5em 0;
+  font-size: 0.85em;
+}
+.prose th,
+.prose td {
+  padding: 0.35em 0.6em;
+  border: 1px solid oklch(var(--border));
+  text-align: left;
+}
+.prose th {
+  font-weight: 600;
+  background: oklch(var(--muted));
+}

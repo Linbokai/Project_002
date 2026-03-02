@@ -1,12 +1,10 @@
+import type { MessageType } from '@/models/enums'
+
 export interface ChatMessage {
   role: 'user' | 'assistant' | 'system'
   content: string
   timestamp: number
-  meta?: MessageMeta
-}
-
-export interface MessageMeta {
-  type?: 'video-analysis'
+  type?: MessageType
 }
 
 export interface VideoMetrics {

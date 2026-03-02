@@ -1,6 +1,6 @@
 import { ref, unref } from 'vue'
 import { copyToClipboard, downloadText } from '@/utils'
-import { buildSeedancePrompt } from '@/services/helpers/prompt-builder'
+import { buildSeedancePrompt } from '@/services/helpers/script-prompt-builder'
 import { chatCompletion } from '@/services/api/openrouter-api'
 import { useSettingsStore } from '@/stores/settings-store'
 import { STORAGE_KEYS } from '@/constants'

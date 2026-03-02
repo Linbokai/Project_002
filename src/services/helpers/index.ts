@@ -1,8 +1,5 @@
 export { matchHooks } from './hook-engine'
 export { getRhythmTemplate, formatRhythmForPrompt } from './rhythm-engine'
 export { parseFrames } from './frame-parser'
-export {
-  buildSystemPrompt,
-  buildSeedancePrompt,
-  buildVideoAnalysisPrompt,
-} from './prompt-builder'
+export { buildSystemPrompt, buildSeedancePrompt } from './script-prompt-builder'
+export { buildVideoAnalysisPrompt, buildVideoOptimizationPrompt, buildScriptDirectionsPrompt, buildDirectionDetailPrompt } from './analysis-prompt-builder'

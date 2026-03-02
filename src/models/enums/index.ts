@@ -54,3 +54,11 @@ export enum GenerationStatus {
   Done = 'done',
   Error = 'error',
 }
+
+export enum MessageType {
+  General = 'general',
+  Script = 'script',
+  Analysis = 'analysis',
+  Optimization = 'optimization',
+  ScriptDirection = 'script_direction',
+}

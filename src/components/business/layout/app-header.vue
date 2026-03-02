@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Settings, History, Key } from 'lucide-vue-next'
+import { Settings, History, Key, Gamepad2 } from 'lucide-vue-next'
 import { APP_NAME } from '@/constants'
 import { useConfigStore } from '@/stores/config-store'
 import { useGameStore } from '@/stores/game-store'
@@ -17,6 +17,7 @@ const emit = defineEmits<{
   'open-config': []
   'open-history': []
   'open-api-settings': []
+  'open-game-manager': []
 }>()
 
 const configStore = useConfigStore()
@@ -53,6 +54,10 @@ function openApiSettings() {
   emit('open-api-settings')
 }
 
+function openGameManager() {
+  emit('open-game-manager')
+}
+
 function openConfigFromPills() {
   emit('open-config')
 }
@@ -85,6 +90,15 @@ function openConfigFromPills() {
       </BaseBadge>
     </div>
     <div class="flex shrink-0 items-center gap-1">
+      <BaseButton
+        variant="ghost"
+        size="icon"
+        title="游戏库管理"
+        aria-label="游戏库管理"
+        @click="openGameManager"
+      >
+        <Gamepad2 :size="16" />
+      </BaseButton>
       <BaseButton
         variant="ghost"
         size="icon"

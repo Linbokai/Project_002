@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { ChatMessage } from '@/models/types'
-import { GenerationStatus } from '@/models/enums'
+import { GenerationStatus, type MessageType } from '@/models/enums'
 
 export const useChatStore = defineStore('chat', () => {
   const messages = ref<ChatMessage[]>([])
@@ -21,11 +21,11 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
-  function startGeneration() {
+  function startGeneration(type?: MessageType) {
     status.value = GenerationStatus.Generating
     currentStreamText.value = ''
     errorMessage.value = ''
-    addMessage({ role: 'assistant', content: '', timestamp: Date.now() })
+    addMessage({ role: 'assistant', content: '', timestamp: Date.now(), type })
   }
 
   function finishGeneration() {

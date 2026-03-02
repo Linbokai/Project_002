@@ -67,6 +67,7 @@ function handleLoadSession(id: string) {
           @open-config="handleOpenConfig"
           @open-history="handleOpenHistory"
           @open-api-settings="handleOpenApiSettings"
+          @open-game-manager="handleOpenGameManager"
         />
         <ChatArea
           @open-settings="handleOpenSettings"

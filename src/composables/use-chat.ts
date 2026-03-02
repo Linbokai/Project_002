@@ -4,8 +4,8 @@ import { useConfigStore } from '@/stores/config-store'
 import { useGameStore } from '@/stores/game-store'
 import { useSettingsStore } from '@/stores/settings-store'
 import { streamChat } from '@/services/api/openrouter-api'
-import { buildSystemPrompt } from '@/services/helpers/prompt-builder'
-import { GenerationStatus } from '@/models/enums'
+import { buildSystemPrompt } from '@/services/helpers/script-prompt-builder'
+import { GenerationStatus, MessageType } from '@/models/enums'
 import { useToast } from '@/composables/use-toast'
 
 const QUICK_ACTION_PROMPTS: Record<string, string> = {
@@ -25,7 +25,7 @@ export function useChat() {
     () => chatStore.status === GenerationStatus.Generating,
   )
 
-  async function runGeneration(userText: string): Promise<void> {
+  async function runGeneration(userText: string, type: MessageType = MessageType.Script): Promise<void> {
     const config = unref(settingsStore.config)
     if (!config.openRouterKey) {
       chatStore.failGeneration('请先配置 API Key')
@@ -42,7 +42,7 @@ export function useChat() {
       content: userText,
       timestamp: Date.now(),
     })
-    chatStore.startGeneration()
+    chatStore.startGeneration(type)
 
     const messages = [
       { role: 'system', content: systemPrompt },
@@ -90,10 +90,11 @@ export function useChat() {
     await runGeneration(lastUserMessage.content)
   }
 
-  async function quickAction(type: 'reroll' | 'hooks' | 'hero'): Promise<void> {
-    const prompt = QUICK_ACTION_PROMPTS[type]
+  async function quickAction(action: 'reroll' | 'hooks' | 'hero'): Promise<void> {
+    const prompt = QUICK_ACTION_PROMPTS[action]
     if (prompt) {
-      await sendMessage(prompt)
+      const msgType = action === 'reroll' ? MessageType.Script : MessageType.General
+      await runGeneration(prompt, msgType)
     }
   }
 
