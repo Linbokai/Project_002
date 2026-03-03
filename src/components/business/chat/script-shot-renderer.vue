@@ -111,7 +111,7 @@ const fieldLabels: Record<string, string> = {
 </script>
 
 <template>
-  <div class="space-y-0.5">
+  <div class="space-y-2">
     <!-- 视觉设定 -->
     <div
       v-if="visualContext || contextLoading"
@@ -302,7 +302,7 @@ const fieldLabels: Record<string, string> = {
       <div v-if="shot.scene" class="mb-1">
         <div class="flex items-start gap-1">
           <span class="shrink-0 text-xs font-medium text-muted-foreground">画面:</span>
-          <span class="text-xs leading-relaxed text-foreground">{{ shot.scene }}</span>
+          <span class="whitespace-pre-wrap text-xs leading-relaxed text-foreground">{{ shot.scene }}</span>
         </div>
         <ShotImageBlock
           :shot-key="shotKey(shot.id)"

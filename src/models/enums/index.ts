@@ -80,4 +80,5 @@ export enum MessageType {
   Analysis = 'analysis',
   Optimization = 'optimization',
   ScriptDirection = 'script_direction',
+  GameplayDirection = 'gameplay_direction',
 }

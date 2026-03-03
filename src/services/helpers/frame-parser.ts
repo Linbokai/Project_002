@@ -1,5 +1,68 @@
 import type { Shot } from '@/models/types'
 
+const FIELD_DEFS = [
+  { field: 'scene', keys: ['画面', '场景', 'scene', '视觉'] },
+  { field: 'voiceover', keys: ['台词', '旁白', '口播', 'voiceover', 'VO', '对白'] },
+  { field: 'textOverlay', keys: ['字幕', '花字', '文字', '文案'] },
+  { field: 'camera', keys: ['镜头', 'camera', '运镜', '机位'] },
+  { field: 'transition', keys: ['转场', 'transition'] },
+  { field: 'sfx', keys: ['音效', 'sfx', 'BGM', '音乐'] },
+  { field: 'notes', keys: ['备注', 'notes', '说明'] },
+] as const
+
+type FieldName = (typeof FIELD_DEFS)[number]['field']
+
+const allKeysPattern = FIELD_DEFS.flatMap((d) => d.keys).join('|')
+const fieldLabelRe = new RegExp(
+  `^[ \\t]*(?:[-*•][ \\t]*)?(?:\\*{1,2})?(${allKeysPattern})(?:\\*{1,2})?\\s*[:：][ \\t]*`,
+  'gim',
+)
+
+function extractAllFields(block: string): Pick<Shot, 'scene' | 'voiceover'> & Partial<Shot> {
+  const result: Record<string, string> = {}
+
+  const labels: { field: FieldName; start: number; contentStart: number }[] = []
+  let m: RegExpExecArray | null
+  fieldLabelRe.lastIndex = 0
+
+  while ((m = fieldLabelRe.exec(block)) !== null) {
+    const matchedKey = m[1].toLowerCase()
+    const def = FIELD_DEFS.find((d) => d.keys.some((k) => k.toLowerCase() === matchedKey))
+    if (def) {
+      labels.push({ field: def.field, start: m.index, contentStart: m.index + m[0].length })
+    }
+  }
+
+  if (labels.length === 0) {
+    return { scene: block.trim(), voiceover: '' }
+  }
+
+  const preamble = block.slice(0, labels[0].start).trim()
+  const hasExplicitScene = labels.some((l) => l.field === 'scene')
+
+  for (let i = 0; i < labels.length; i++) {
+    const end = i + 1 < labels.length ? labels[i + 1].start : block.length
+    const value = block.slice(labels[i].contentStart, end).trim()
+    if (!result[labels[i].field]) {
+      result[labels[i].field] = value
+    }
+  }
+
+  if (!hasExplicitScene && preamble) {
+    result.scene = preamble
+  }
+
+  return {
+    scene: result.scene ?? '',
+    voiceover: result.voiceover ?? '',
+    textOverlay: result.textOverlay,
+    camera: result.camera,
+    transition: result.transition,
+    sfx: result.sfx,
+    notes: result.notes,
+  }
+}
+
 export function parseFrames(text: string): Shot[] {
   const shots = tryTimelineFormat(text)
     ?? tryBracketFormat(text)
@@ -18,13 +81,7 @@ function tryTimelineFormat(text: string): Omit<Shot, 'id'>[] | null {
   return matches.map((m) => ({
     timeRange: m[1],
     segment: m[2].trim(),
-    scene: extractField(m[3], ['画面', '场景', 'scene']),
-    voiceover: extractField(m[3], ['台词', '旁白', '口播', 'voiceover', 'VO']),
-    textOverlay: extractField(m[3], ['字幕', '花字', '文字']),
-    camera: extractField(m[3], ['镜头', 'camera']),
-    transition: extractField(m[3], ['转场', 'transition']),
-    sfx: extractField(m[3], ['音效', 'sfx', 'BGM']),
-    notes: extractField(m[3], ['备注', 'notes']),
+    ...extractAllFields(m[3]),
   }))
 }
 
@@ -33,11 +90,10 @@ function tryBracketFormat(text: string): Omit<Shot, 'id'>[] | null {
   const matches = [...text.matchAll(re)]
   if (matches.length < 2) return null
 
-  return matches.map((m, i) => ({
+  return matches.map((m) => ({
     timeRange: '',
     segment: m[1].trim(),
-    scene: m[2].trim(),
-    voiceover: extractField(m[2], ['台词', '旁白', '口播']),
+    ...extractAllFields(m[2]),
   }))
 }
 
@@ -49,8 +105,7 @@ function tryShotNumberFormat(text: string): Omit<Shot, 'id'>[] | null {
   return matches.map((m) => ({
     timeRange: '',
     segment: `分镜${m[1]}`,
-    scene: m[2].trim(),
-    voiceover: extractField(m[2], ['台词', '旁白', '口播']),
+    ...extractAllFields(m[2]),
   }))
 }
 
@@ -62,8 +117,7 @@ function tryNumberListFormat(text: string): Omit<Shot, 'id'>[] | null {
   return matches.map((m) => ({
     timeRange: '',
     segment: `第${m[1]}段`,
-    scene: m[2].trim(),
-    voiceover: '',
+    ...extractAllFields(m[2]),
   }))
 }
 
@@ -72,16 +126,6 @@ function fallbackParagraphs(text: string): Omit<Shot, 'id'>[] {
   return paragraphs.map((p, i) => ({
     timeRange: '',
     segment: `段落${i + 1}`,
-    scene: p.trim(),
-    voiceover: '',
+    ...extractAllFields(p),
   }))
-}
-
-function extractField(text: string, keys: string[]): string {
-  for (const key of keys) {
-    const re = new RegExp(`${key}\\s*[:：]\\s*(.+?)(?=\\n|$)`, 'i')
-    const m = text.match(re)
-    if (m) return m[1].trim()
-  }
-  return ''
 }

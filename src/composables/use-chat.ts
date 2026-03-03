@@ -8,8 +8,12 @@ import { useThemeRadarStore } from '@/stores/theme-radar-store'
 import { useGameplayRadarStore } from '@/stores/gameplay-radar-store'
 import { streamChat } from '@/services/api/openrouter-api'
 import { buildSystemPrompt } from '@/services/helpers/script-prompt-builder'
-import { buildUeSystemPrompt } from '@/services/helpers/gameplay-prompt-builder'
-import { GenerationStatus, MessageType, ProductionDirection } from '@/models/enums'
+import {
+  buildUeSystemPrompt,
+  buildGameplayDirectionsPrompt,
+  buildGameplayDetailPrompt,
+} from '@/services/helpers/gameplay-prompt-builder'
+import { GenerationStatus, MessageType, ProductionDirection, UeContentType } from '@/models/enums'
 import { useToast } from '@/composables/use-toast'
 
 const QUICK_ACTION_PROMPTS: Record<string, string> = {
@@ -98,11 +102,116 @@ export function useChat() {
   }
 
   async function generateScript(): Promise<void> {
-    const direction = unref(configStore.config).direction
-    const prompt = direction === ProductionDirection.UeGameplay
+    const genConfig = unref(configStore.config)
+
+    if (
+      genConfig.direction === ProductionDirection.UeGameplay
+      && genConfig.ueContentType === UeContentType.Gameplay
+    ) {
+      await generateGameplayDirections()
+      return
+    }
+
+    const prompt = genConfig.direction === ProductionDirection.UeGameplay
       ? '请根据以上配置生成3D/UE创意玩法买量脚本。先输出玩法策划简案，再写分镜脚本。'
       : '请根据以上配置生成买量视频脚本。'
     await runGeneration(prompt)
+  }
+
+  async function generateGameplayDirections(): Promise<void> {
+    const config = unref(settingsStore.config)
+    if (!config.openRouterKey) {
+      chatStore.failGeneration('请先配置 API Key')
+      showToast('请先配置 API Key', 'destructive')
+      return
+    }
+
+    const genConfig = unref(configStore.config)
+    const currentGame = unref(gameStore.currentGame)
+    const prompt = buildGameplayDirectionsPrompt(genConfig, currentGame)
+
+    chatStore.addMessage({
+      role: 'user',
+      content: '生成创意玩法方向',
+      timestamp: Date.now(),
+    })
+    chatStore.startGeneration(MessageType.GameplayDirection)
+
+    const messages = [
+      { role: 'user', content: prompt },
+    ]
+
+    await streamChat(
+      {
+        config,
+        model: settingsStore.getModelForTask('gen'),
+        messages,
+      },
+      {
+        onChunk: (chunk) => chatStore.appendToStream(chunk),
+        onDone: () => {
+          chatStore.finishGeneration()
+          saveSession()
+        },
+        onError: (err) => {
+          chatStore.failGeneration(err)
+          showToast(err, 'destructive')
+        },
+      },
+    )
+  }
+
+  async function generateGameplayDetail(directionNumber: number): Promise<void> {
+    const config = unref(settingsStore.config)
+    if (!config.openRouterKey) {
+      chatStore.failGeneration('请先配置 API Key')
+      showToast('请先配置 API Key', 'destructive')
+      return
+    }
+
+    const genConfig = unref(configStore.config)
+    const currentGame = unref(gameStore.currentGame)
+    const userPrompt = buildGameplayDetailPrompt(directionNumber, genConfig, currentGame)
+
+    const directionsContext = chatStore.getMessagesForApi()
+      .filter((m) => m.role === 'assistant')
+      .map((m) => m.content)
+      .join('\n\n')
+
+    const systemPrompt = buildUeSystemPrompt(genConfig, currentGame, directionsContext)
+
+    const dirLabel = ['一', '二', '三'][directionNumber - 1] ?? String(directionNumber)
+    chatStore.addMessage({
+      role: 'user',
+      content: `选择方向${dirLabel}，生成完整脚本`,
+      timestamp: Date.now(),
+    })
+    chatStore.startGeneration(MessageType.Script)
+
+    const messages = [
+      { role: 'system', content: systemPrompt },
+      ...chatStore.getMessagesForApi(),
+      { role: 'user', content: userPrompt },
+    ]
+
+    await streamChat(
+      {
+        config,
+        model: settingsStore.getModelForTask('gen'),
+        messages,
+      },
+      {
+        onChunk: (chunk) => chatStore.appendToStream(chunk),
+        onDone: () => {
+          chatStore.finishGeneration()
+          saveSession()
+        },
+        onError: (err) => {
+          chatStore.failGeneration(err)
+          showToast(err, 'destructive')
+        },
+      },
+    )
   }
 
   async function sendMessage(userText: string): Promise<void> {
@@ -136,6 +245,7 @@ export function useChat() {
   return {
     sendMessage,
     generateScript,
+    generateGameplayDetail,
     regenerate,
     quickAction,
     isGenerating,
