@@ -216,6 +216,88 @@ function buildCompositionGuide(ratio: AspectRatio): string {
   }
 }
 
+export function buildGameplayDirectionsPrompt(
+  config: GenerationConfig,
+  game: Game | null,
+): string {
+  const selectedPresets = UE_GAMEPLAY_PRESETS.filter(
+    (p) => config.selectedGameplays.includes(p.id),
+  )
+
+  const gameInfo = game
+    ? `游戏名称：${game.name}\n游戏类型：${game.genre}\n核心卖点：${game.sell}`
+    : '（未指定游戏）'
+
+  const presetInfo = selectedPresets.length > 0
+    ? selectedPresets.map((p) => `- ${p.name}：${p.description}（核心循环：${p.coreLoop}）`).join('\n')
+    : '（未选择预设玩法）'
+
+  const audienceProfile = AUDIENCE_PROFILES.find((a) => a.id === config.audience)
+  const audienceInfo = config.audience === AudienceType.Custom && config.customAudience
+    ? config.customAudience
+    : audienceProfile
+      ? `${audienceProfile.label} — ${audienceProfile.description}`
+      : '通用'
+
+  return `你是一位资深游戏买量创意总监，同时精通玩法策划和3D/UE视觉表现。
+
+请基于以下信息，输出 **3个差异化的创意玩法方向**，用于后续生成完整的买量分镜脚本。
+
+## 游戏信息
+${gameInfo}
+
+## 已选玩法参考
+${presetInfo}
+
+## 目标用户
+${audienceInfo}
+
+## 视频参数
+- 时长：${config.duration}秒
+- 画面比例：${config.aspectRatio}
+
+## 输出要求
+
+请严格按以下格式输出3个方向：
+
+### 方向一：[方向名称]
+- **核心玩法循环**：一句话描述"玩家做什么→得到什么→为什么继续"
+- **视觉钩子策略**：开头2-3秒用什么视觉冲击抓住用户
+- **差异化亮点**：和同类素材相比的独特创意点
+- **预期吸量优势**：为什么这个方向能吸引用户下载
+
+### 方向二：[方向名称]
+（同上格式）
+
+### 方向三：[方向名称]
+（同上格式）
+
+要求：
+1. 三个方向必须在创意角度上有明显差异（如：情感驱动 vs 挑战驱动 vs 好奇心驱动）
+2. 每个方向的视觉钩子策略必须具体到可执行的3D画面描述
+3. 结合当前游戏的核心卖点，确保方向与游戏调性匹配`
+}
+
+export function buildGameplayDetailPrompt(
+  directionNumber: number,
+  config: GenerationConfig,
+  game: Game | null,
+): string {
+  const dirLabel = ['一', '二', '三'][directionNumber - 1] ?? String(directionNumber)
+
+  return `用户已选择 **方向${dirLabel}**。
+
+请基于该方向的创意构思，生成一份完整的3D/UE买量分镜脚本。
+
+要求：
+1. 严格围绕方向${dirLabel}的核心玩法循环和视觉钩子策略展开
+2. 脚本时长 ${config.duration} 秒，画面比例 ${config.aspectRatio}
+3. 每个分镜包含：画面描述、台词/旁白、镜头运动、转场方式
+4. 开头2-3秒必须使用方向中提出的视觉钩子策略
+5. 所有画面描述基于3D/UE引擎级别的表现力
+${game ? `6. 结合游戏《${game.name}》的实际内容和卖点` : ''}`
+}
+
 export function buildGameplaySearchPrompt(keyword: string): string {
   return `你是一位全球游戏市场分析师。请搜索海内外最新的热门游戏创意玩法，关键词："${keyword}"。
 

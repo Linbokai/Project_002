@@ -2,11 +2,15 @@
 import BaseButton from '@/components/ui/base-button.vue'
 import { FileText } from 'lucide-vue-next'
 import { useVideoAnalysis } from '@/composables/use-video-analysis'
+import { useChat } from '@/composables/use-chat'
 import { useChatStore } from '@/stores/chat-store'
 import { GenerationStatus } from '@/models/enums'
 import { computed } from 'vue'
 
-const { generateDetailedScript } = useVideoAnalysis()
+const props = withDefaults(defineProps<{
+  source?: 'analysis' | 'gameplay'
+}>(), { source: 'analysis' })
+
 const chatStore = useChatStore()
 
 const busy = computed(() => chatStore.status === GenerationStatus.Generating)
@@ -18,7 +22,13 @@ const directions = [
 ] as const
 
 function handleSelect(directionNumber: number) {
-  generateDetailedScript(directionNumber)
+  if (props.source === 'gameplay') {
+    const { generateGameplayDetail } = useChat()
+    generateGameplayDetail(directionNumber)
+  } else {
+    const { generateDetailedScript } = useVideoAnalysis()
+    generateDetailedScript(directionNumber)
+  }
 }
 </script>
 

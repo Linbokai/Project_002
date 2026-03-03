@@ -53,6 +53,11 @@ const showDirectionActions = computed(() => {
   return props.message.type === MessageType.ScriptDirection && hasDirectionsResult.value
 })
 
+const showGameplayDirectionActions = computed(() => {
+  if (!isAssistant.value || !props.message.content) return false
+  return props.message.type === MessageType.GameplayDirection
+})
+
 const useMarkdown = computed(() => {
   if (!isAssistant.value) return false
   const c = props.message.content
@@ -76,7 +81,7 @@ const gameName = computed(() => gameStore.currentGame?.name ?? '脚本')
       :message-timestamp="message.timestamp"
     />
     <MarkdownContent
-      v-else-if="useMarkdown"
+      v-else-if="showGameplayDirectionActions || useMarkdown"
       :content="message.content || ''"
     />
     <pre
@@ -93,6 +98,10 @@ const gameName = computed(() => gameStore.currentGame?.name ?? '脚本')
     />
     <ScriptDirectionActions
       v-if="showDirectionActions"
+    />
+    <ScriptDirectionActions
+      v-if="showGameplayDirectionActions"
+      source="gameplay"
     />
   </div>
 </template>
