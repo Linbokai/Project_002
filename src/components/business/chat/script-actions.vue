@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import BaseButton from '@/components/ui/base-button.vue'
 import { Copy, Download, Languages, Shield, ShieldOff } from 'lucide-vue-next'
 import { useScriptExport } from '@/composables/use-script-export'
+import { useToast } from '@/composables/use-toast'
 
 const props = defineProps<{
   scriptText: string
@@ -16,6 +17,7 @@ const {
   safeMode,
   toggleSafeMode,
 } = useScriptExport()
+const { showToast } = useToast()
 
 const seedanceZhLoading = ref(false)
 const seedanceEnLoading = ref(false)
@@ -40,8 +42,11 @@ async function handleSeedance(lang: 'zh' | 'en') {
     seedanceEnLoading.value = true
   }
   try {
-    const result = await convertToSeedance(props.scriptText, lang)
-    await copyScript(result)
+    await convertToSeedance(props.scriptText, lang)
+    showToast('视频提示词已生成，请在聊天窗口查看', 'success')
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : '转化失败'
+    showToast(msg, 'destructive')
   } finally {
     seedanceZhLoading.value = false
     seedanceEnLoading.value = false

@@ -3,7 +3,7 @@ import type { RhythmTemplate } from '@/constants/rhythm-templates'
 
 export function getRhythmTemplate(duration: number): RhythmTemplate {
   const match = RHYTHM_TEMPLATES.find((t) => t.duration === duration)
-  return match ?? RHYTHM_TEMPLATES[2] // default: 15s
+  return match ?? RHYTHM_TEMPLATES[2]! // default: 15s
 }
 
 export function formatRhythmForPrompt(template: RhythmTemplate): string {

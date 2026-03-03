@@ -41,7 +41,7 @@ function buildSearchPrompt(platform: SearchPlatform): string {
 
 function parseToThemeTopics(raw: unknown): ThemeTopic[] {
   if (!Array.isArray(raw)) return []
-  return raw.map((item, idx) => {
+  return raw.map((item, _idx) => {
     const o = item as Record<string, unknown>
     return {
       id: (o.id as string) ?? generateId(),

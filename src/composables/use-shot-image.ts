@@ -91,7 +91,7 @@ export function useShotImage(scriptKey: ScriptKey, shotKey: ShotImageKey) {
 
       if (result.images.length > 0) {
         imageStore.setImage(shotKey, {
-          url: result.images[0].url,
+          url: result.images[0]!.url,
           prompt: sceneDescription,
           model: settingsStore.getModelForTask('image'),
           createdAt: Date.now(),

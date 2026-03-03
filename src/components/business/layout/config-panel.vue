@@ -20,7 +20,7 @@ import { useConfigStore } from '@/stores/config-store'
 import { useGameStore } from '@/stores/game-store'
 import { useThemeRadarStore } from '@/stores/theme-radar-store'
 import { useGameplayRadarStore } from '@/stores/gameplay-radar-store'
-import { ProductionDirection, UeContentType, ScriptType, AudienceType } from '@/models/enums'
+import { ProductionDirection, UeContentType, ScriptType, AudienceType, AspectRatio } from '@/models/enums'
 import { SCRIPT_TYPES } from '@/constants/script-types'
 import { AUDIENCE_PROFILES } from '@/constants/audience-profiles'
 import { SELL_TAG_GROUPS } from '@/constants/sell-tags'
@@ -84,10 +84,10 @@ function switchDirection(dir: ProductionDirection) {
   configStore.updateConfig({ direction: dir, scriptType: defaultScriptType })
 }
 
-const aspectRatioItems = [
-  { value: '9:16', label: '9:16' },
-  { value: '16:9', label: '16:9' },
-  { value: '1:1', label: '1:1' },
+const aspectRatioItems: { value: AspectRatio; label: string }[] = [
+  { value: AspectRatio.Portrait, label: '9:16' },
+  { value: AspectRatio.Landscape, label: '16:9' },
+  { value: AspectRatio.Square, label: '1:1' },
 ]
 
 const durationItems = [5, 10, 15, 30, 60]
@@ -236,7 +236,7 @@ const sellTagCount = computed(() => configStore.config.selectedSellTags.length)
               :model-value="configStore.config.scriptType"
               :options="scriptTypeOptions"
               placeholder="选择脚本类型"
-              @update:model-value="(v) => configStore.updateConfig({ scriptType: v })"
+              @update:model-value="(v) => configStore.updateConfig({ scriptType: v as ScriptType })"
             />
           </div>
 
@@ -253,7 +253,7 @@ const sellTagCount = computed(() => configStore.config.selectedSellTags.length)
               :model-value="configStore.config.audience"
               :options="audienceOptions"
               placeholder="选择目标用户"
-              @update:model-value="(v) => configStore.updateConfig({ audience: v })"
+              @update:model-value="(v) => configStore.updateConfig({ audience: v as AudienceType })"
             />
             <BaseInput
               v-if="configStore.config.audience === AudienceType.Custom"
