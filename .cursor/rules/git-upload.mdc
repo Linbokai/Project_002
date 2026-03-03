@@ -1,0 +1,54 @@
+---
+description: 当用户输入"上传git001"时，自动执行 git 提交、合并主线、新建分支的完整流程
+alwaysApply: true
+---
+
+# Git 一键上传流程
+
+当用户说"上传git001"或类似指令时，按以下步骤依次执行：
+
+## 执行步骤
+
+### Step 1 — 分析变更并提交
+
+1. 运行 `git status` 和 `git diff` 查看所有变更
+2. 根据变更内容自动生成符合项目规范的 commit message（格式: `type(scope): description`）
+3. 执行 `git add .` 暂存所有变更
+4. 执行 `git commit` 提交
+
+### Step 2 — 推送当前分支
+
+```bash
+git push -u origin HEAD
+```
+
+如果推送失败，停止流程并报告错误。
+
+### Step 3 — 切换到主线并合并
+
+```bash
+git checkout main
+git pull origin main
+git merge <当前分支名> --no-ff -m "merge: <当前分支名> into main"
+git push origin main
+```
+
+如果合并有冲突，停止流程并报告冲突文件，等待用户手动解决。
+
+### Step 4 — 创建新的递增分支
+
+1. 从当前分支名解析编号（如 `git001` → `1`）
+2. 编号 +1，创建新分支（如 `git002`）
+3. 执行：
+
+```bash
+git checkout -b git<新编号>
+git push -u origin git<新编号>
+```
+
+### Step 5 — 报告结果
+
+向用户汇报：
+- 提交的 commit message
+- 已合并到 main
+- 新分支名称（如 `git002`）

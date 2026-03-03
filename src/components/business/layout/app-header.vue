@@ -16,11 +16,18 @@ const emit = defineEmits<{
 const settingsStore = useSettingsStore()
 const { keyInfo, loading, refresh } = useBalance()
 
+const hasLimit = computed(() => {
+  const info = keyInfo.value
+  return info != null && info.limit != null && info.limitRemaining != null
+})
+
+const balanceLabel = computed(() => (hasLimit.value ? '余额' : '已用'))
+
 const balanceText = computed(() => {
   if (!keyInfo.value) return null
   const info = keyInfo.value
-  if (info.limit != null && info.limitRemaining != null) {
-    return `$${info.limitRemaining.toFixed(2)}`
+  if (hasLimit.value) {
+    return `$${info.limitRemaining!.toFixed(2)}`
   }
   return `$${info.usage.toFixed(2)}`
 })
@@ -65,7 +72,7 @@ function openGameManager() {
         class="mr-1 flex items-center gap-1 rounded-md border border-border px-2 py-0.5"
         :title="balanceTooltip"
       >
-        <span class="text-xs text-muted-foreground">余额</span>
+        <span class="text-xs text-muted-foreground">{{ balanceLabel }}</span>
         <span class="text-xs font-medium tabular-nums">{{ balanceText }}</span>
         <button
           class="inline-flex h-4 w-4 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
