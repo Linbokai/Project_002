@@ -3,6 +3,7 @@ import { copyToClipboard, downloadText } from '@/utils'
 import { buildSeedancePrompt } from '@/services/helpers/script-prompt-builder'
 import { chatCompletion } from '@/services/api/openrouter-api'
 import { useSettingsStore } from '@/stores/settings-store'
+import { useChatStore } from '@/stores/chat-store'
 import { STORAGE_KEYS } from '@/constants'
 import { getItem, setItem } from '@/utils'
 
@@ -14,6 +15,7 @@ function formatExportFilename(gameName: string): string {
 
 export function useScriptExport() {
   const settingsStore = useSettingsStore()
+  const chatStore = useChatStore()
 
   const safeMode = ref<boolean>(
     getItem<boolean>(STORAGE_KEYS.SAFE_MODE, false),
@@ -36,20 +38,39 @@ export function useScriptExport() {
   async function convertToSeedance(
     script: string,
     lang: 'zh' | 'en',
-  ): Promise<string> {
+  ): Promise<void> {
     const config = unref(settingsStore.config)
     if (!config.openRouterKey) {
       throw new Error('请先配置 API Key')
     }
 
-    const prompt = buildSeedancePrompt(script, lang, safeMode.value)
-    const response = await chatCompletion({
-      config,
-      model: settingsStore.getModelForTask('gen'),
-      messages: [{ role: 'user', content: prompt }],
-      stream: false,
+    const label = lang === 'zh' ? '中文' : '英文'
+    chatStore.addMessage({
+      role: 'user',
+      content: `将脚本转为 Seedance 视频提示词（${label}）`,
+      timestamp: Date.now(),
     })
-    return response.trim()
+    chatStore.startGeneration()
+
+    try {
+      const prompt = buildSeedancePrompt(script, lang, safeMode.value)
+      const response = await chatCompletion({
+        config,
+        model: settingsStore.getModelForTask('gen'),
+        messages: [{ role: 'user', content: prompt }],
+        stream: false,
+      })
+      const result = response.trim()
+      const last = chatStore.messages[chatStore.messages.length - 1]
+      if (last && last.role === 'assistant') {
+        last.content = result
+      }
+      chatStore.finishGeneration()
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : '转化失败'
+      chatStore.failGeneration(msg)
+      throw e
+    }
   }
 
   return {

@@ -18,7 +18,17 @@ const fieldLabelRe = new RegExp(
   'gim',
 )
 
-function extractAllFields(block: string): Pick<Shot, 'scene' | 'voiceover'> & Partial<Shot> {
+interface ExtractedFields {
+  scene: string
+  voiceover: string
+  textOverlay?: string
+  camera?: string
+  transition?: string
+  sfx?: string
+  notes?: string
+}
+
+function extractAllFields(block: string): ExtractedFields {
   const result: Record<string, string> = {}
 
   const labels: { field: FieldName; start: number; contentStart: number }[] = []
@@ -26,7 +36,7 @@ function extractAllFields(block: string): Pick<Shot, 'scene' | 'voiceover'> & Pa
   fieldLabelRe.lastIndex = 0
 
   while ((m = fieldLabelRe.exec(block)) !== null) {
-    const matchedKey = m[1].toLowerCase()
+    const matchedKey = m[1]!.toLowerCase()
     const def = FIELD_DEFS.find((d) => d.keys.some((k) => k.toLowerCase() === matchedKey))
     if (def) {
       labels.push({ field: def.field, start: m.index, contentStart: m.index + m[0].length })
@@ -37,14 +47,15 @@ function extractAllFields(block: string): Pick<Shot, 'scene' | 'voiceover'> & Pa
     return { scene: block.trim(), voiceover: '' }
   }
 
-  const preamble = block.slice(0, labels[0].start).trim()
+  const preamble = block.slice(0, labels[0]!.start).trim()
   const hasExplicitScene = labels.some((l) => l.field === 'scene')
 
   for (let i = 0; i < labels.length; i++) {
-    const end = i + 1 < labels.length ? labels[i + 1].start : block.length
-    const value = block.slice(labels[i].contentStart, end).trim()
-    if (!result[labels[i].field]) {
-      result[labels[i].field] = value
+    const label = labels[i]!
+    const end = i + 1 < labels.length ? labels[i + 1]!.start : block.length
+    const value = block.slice(label.contentStart, end).trim()
+    if (!result[label.field]) {
+      result[label.field] = value
     }
   }
 
@@ -79,9 +90,9 @@ function tryTimelineFormat(text: string): Omit<Shot, 'id'>[] | null {
   if (matches.length < 2) return null
 
   return matches.map((m) => ({
-    timeRange: m[1],
-    segment: m[2].trim(),
-    ...extractAllFields(m[3]),
+    ...extractAllFields(m[3]!),
+    timeRange: m[1]!,
+    segment: m[2]!.trim(),
   }))
 }
 
@@ -91,9 +102,9 @@ function tryBracketFormat(text: string): Omit<Shot, 'id'>[] | null {
   if (matches.length < 2) return null
 
   return matches.map((m) => ({
+    ...extractAllFields(m[2]!),
     timeRange: '',
-    segment: m[1].trim(),
-    ...extractAllFields(m[2]),
+    segment: m[1]!.trim(),
   }))
 }
 
@@ -103,9 +114,9 @@ function tryShotNumberFormat(text: string): Omit<Shot, 'id'>[] | null {
   if (matches.length < 2) return null
 
   return matches.map((m) => ({
+    ...extractAllFields(m[2]!),
     timeRange: '',
-    segment: `分镜${m[1]}`,
-    ...extractAllFields(m[2]),
+    segment: `分镜${m[1]!}`,
   }))
 }
 
@@ -115,9 +126,9 @@ function tryNumberListFormat(text: string): Omit<Shot, 'id'>[] | null {
   if (matches.length < 2) return null
 
   return matches.map((m) => ({
+    ...extractAllFields(m[2]!),
     timeRange: '',
-    segment: `第${m[1]}段`,
-    ...extractAllFields(m[2]),
+    segment: `第${m[1]!}段`,
   }))
 }
 

@@ -222,14 +222,14 @@ export function useChat() {
     const list = unref(chatStore.messages)
     let lastUserIndex = -1
     for (let i = list.length - 1; i >= 0; i--) {
-      if (list[i].role === 'user') {
+      if (list[i]!.role === 'user') {
         lastUserIndex = i
         break
       }
     }
     if (lastUserIndex === -1) return
 
-    const lastUserMessage = list[lastUserIndex]
+    const lastUserMessage = list[lastUserIndex]!
     chatStore.removeMessagesAfter(lastUserIndex)
     await runGeneration(lastUserMessage.content)
   }

@@ -10,7 +10,7 @@ export const useGameStore = defineStore('game', () => {
 
   const currentGame = computed<Game | null>(() => {
     if (selectedIndex.value >= 0 && selectedIndex.value < games.value.length) {
-      return games.value[selectedIndex.value]
+      return games.value[selectedIndex.value] ?? null
     }
     return null
   })
@@ -31,7 +31,7 @@ export const useGameStore = defineStore('game', () => {
   function updateGame(id: string, data: Partial<Omit<Game, 'id'>>) {
     const idx = games.value.findIndex((g) => g.id === id)
     if (idx !== -1) {
-      games.value[idx] = { ...games.value[idx], ...data }
+      Object.assign(games.value[idx]!, data)
       persist()
     }
   }

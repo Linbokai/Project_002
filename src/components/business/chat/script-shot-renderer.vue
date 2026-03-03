@@ -315,12 +315,12 @@ const fieldLabels: Record<string, string> = {
       <!-- 其他字段 -->
       <template v-for="(label, field) in fieldLabels" :key="field">
         <div
-          v-if="(shot as Record<string, unknown>)[field]"
+          v-if="(shot as unknown as Record<string, unknown>)[field]"
           class="flex items-start gap-1"
         >
           <span class="shrink-0 text-xs font-medium text-muted-foreground">{{ label }}:</span>
           <span class="text-xs leading-relaxed text-foreground">
-            {{ (shot as Record<string, unknown>)[field] }}
+            {{ (shot as unknown as Record<string, unknown>)[field] }}
           </span>
         </div>
       </template>

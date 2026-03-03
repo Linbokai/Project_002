@@ -37,7 +37,8 @@ function hasDetails(): boolean {
 }
 
 function getDescription(): string {
-  return props.gameplay.description ?? (props.gameplay as GameplayTopic).desc ?? ''
+  if ('description' in props.gameplay) return props.gameplay.description
+  return props.gameplay.desc ?? ''
 }
 
 function getTier(): string | null {

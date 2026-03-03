@@ -3,6 +3,7 @@ import type { HookPattern } from '@/constants/hook-patterns'
 import type { RhythmTemplate } from '@/constants/rhythm-templates'
 import { SCRIPT_TYPES } from '@/constants/script-types'
 import { AUDIENCE_PROFILES } from '@/constants/audience-profiles'
+import { SEEDANCE_PROMPT_GUIDE } from '@/constants/seedance-reference'
 import { AspectRatio, AudienceType } from '@/models/enums'
 import { matchHooks } from './hook-engine'
 import { getRhythmTemplate, formatRhythmForPrompt } from './rhythm-engine'
@@ -127,7 +128,7 @@ function buildCompositionGuide(ratio: AspectRatio): string {
 
 export function buildSeedancePrompt(script: string, lang: 'zh' | 'en', safeMode: boolean): string {
   const safetyRules = safeMode
-    ? `\n\n安全约束（必须遵守）：
+    ? `\n\n## 安全约束（必须遵守）
 - 真实武器替换为能量法器/魔法武器
 - 血腥画面替换为光点消散效果
 - 丧尸等恐怖元素必须Q版化/卡通化
@@ -137,8 +138,46 @@ export function buildSeedancePrompt(script: string, lang: 'zh' | 'en', safeMode:
     : ''
 
   if (lang === 'en') {
-    return `You are a Seedance 2.0 video generation prompt expert. Convert the following storyboard script into a single Seedance 2.0 English prompt (max 2000 characters). Focus on visual descriptions, camera movements, transitions, and pacing. Output ONLY the prompt text, no explanation.${safetyRules}\n\n--- Script ---\n${script}`
+    return `You are a Seedance 2.0 video generation prompt engineer. Your task is to convert a storyboard script into a Seedance 2.0 prompt following the official format specification below.
+
+## Seedance 2.0 Official Prompt Specification
+
+${SEEDANCE_PROMPT_GUIDE}
+
+## Conversion Rules
+
+1. Use the storyboard script format with 【Style】【Duration】 headers and [timestamp] shot blocks
+2. Translate all content into natural, vivid English
+3. For each shot: specify shot name, camera type, physical scene details, character body language, and audio cues
+4. Add consistency constraints and physics requirements at the end
+5. Use specific style anchors (director name / film style) instead of vague terms like "cinematic"
+6. Keep each shot segment to 3-5 seconds with precise timecodes
+7. Total prompt must not exceed 2000 characters
+8. Output ONLY the final Seedance prompt — no explanation, no markdown wrapping${safetyRules}
+
+## Source Script
+
+${script}`
   }
 
-  return `你是 Seedance 2.0 视频生成提示词专家。将以下分镜脚本压缩为一段 Seedance 2.0 中文提示词（不超过2000字符）。重点描述画面内容、镜头运动、转场和节奏。只输出提示词，不要解释。${safetyRules}\n\n--- 脚本 ---\n${script}`
+  return `你是一位 Seedance 2.0 视频生成提示词工程师。你的任务是将分镜脚本转化为符合 Seedance 2.0 官方格式规范的视频生成提示词。
+
+## Seedance 2.0 官方提示词规范
+
+${SEEDANCE_PROMPT_GUIDE}
+
+## 转化规则
+
+1. 必须使用分镜脚本格式，包含【风格】【时长】头部和 [时间码] 镜头块
+2. 每个镜头需写明：镜头名称、镜头类型、包含物理细节的场景描述、角色具体肢体语言、音效提示
+3. 末尾必须添加一致性约束和物理要求
+4. 用具体风格锚点（导演名/电影风格/艺术流派），不要用模糊的"电影感"
+5. 每个镜头片段控制在 3-5 秒，时间码必须精确
+6. 描述物理动作而非抽象概念（"碎石沿斜面滑落"而非"震撼的效果"）
+7. 总提示词不超过 2000 字符
+8. 只输出最终的 Seedance 提示词，不要解释、不要包裹 markdown${safetyRules}
+
+## 原始脚本
+
+${script}`
 }
