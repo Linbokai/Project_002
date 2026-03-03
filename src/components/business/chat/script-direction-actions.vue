@@ -12,6 +12,8 @@ const props = withDefaults(defineProps<{
 }>(), { source: 'analysis' })
 
 const chatStore = useChatStore()
+const { generateDetailedScript } = useVideoAnalysis()
+const { generateGameplayDetail } = useChat()
 
 const busy = computed(() => chatStore.status === GenerationStatus.Generating)
 
@@ -23,10 +25,8 @@ const directions = [
 
 function handleSelect(directionNumber: number) {
   if (props.source === 'gameplay') {
-    const { generateGameplayDetail } = useChat()
     generateGameplayDetail(directionNumber)
   } else {
-    const { generateDetailedScript } = useVideoAnalysis()
     generateDetailedScript(directionNumber)
   }
 }
