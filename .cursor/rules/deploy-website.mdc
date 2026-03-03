@@ -1,0 +1,48 @@
+---
+description: 当用户输入"更新网站"时，执行一键部署流程
+alwaysApply: true
+---
+
+# 更新网站 — 一键部署流程
+
+当用户说"更新网站"或类似的部署请求时，按以下步骤依次执行：
+
+## 服务器信息
+
+- 用户: `fy-linbokai`
+- IP: `106.15.191.84`
+- 远程目录: `~/ai-model-hub`
+
+## 执行步骤
+
+按顺序在终端中执行以下命令，每步确认成功后再继续下一步：
+
+### Step 1 — 构建项目
+
+```bash
+pnpm build
+```
+
+如果构建失败，停止部署并报告错误。
+
+### Step 2 — 打包构建产物
+
+```bash
+tar -czf deploy/ai-model-hub.tar.gz dist/
+```
+
+### Step 3 — 上传到服务器
+
+```bash
+scp deploy/ai-model-hub.tar.gz fy-linbokai@106.15.191.84:~/ai-model-hub/
+```
+
+### Step 4 — 服务器端解压并重启服务
+
+```bash
+ssh fy-linbokai@106.15.191.84 "cd ~/ai-model-hub && tar -xzf ai-model-hub.tar.gz && bash deploy/setup.sh"
+```
+
+### Step 5 — 验证部署结果
+
+检查上一步输出中是否包含 `DEPLOY_SUCCESS`，向用户报告部署结果。
