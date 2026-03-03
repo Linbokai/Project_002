@@ -46,6 +46,7 @@ function handleLoadSession(id: string) {
       <ConfigPanel />
       <div class="flex flex-1 flex-col overflow-hidden">
         <AppHeader
+          @new-session="chatStore.clearMessages()"
           @open-history="handleOpenHistory"
           @open-api-settings="handleOpenApiSettings"
           @open-game-manager="handleOpenGameManager"

@@ -21,14 +21,20 @@ export function buildImageSystemPrompt(
   hasStyleImages: boolean,
 ): string {
   const parts = [
-    '你是一个专业的买量广告画面生成助手。请严格按照以下视觉设定生成图片，确保角色外观、画面风格和视觉元素与设定保持一致。',
+    `你是一个专业的分镜稿（Storyboard）绘制助手。请按照以下要求绘制分镜画面：
+- 画面风格为分镜稿/故事板，不是精致效果图或成品渲染
+- 重点表达构图、景别、人物站位和动态、镜头感
+- 画面简洁清晰，信息传达优先，让人一眼看懂场景内容
+- 用简洁的色彩区分主体与背景，不需要精细的光影和材质渲染
+
+请严格按照以下视觉设定保持角色和场景的一致性。`,
   ]
 
   if (hasCharacterImages || hasStyleImages) {
     const refs: string[] = []
     if (hasCharacterImages) refs.push('角色外观参考图')
     if (hasStyleImages) refs.push('画面风格参考图')
-    parts.push(`用户已提供${refs.join('和')}，请严格参照其中的视觉特征进行生成。`)
+    parts.push(`用户已提供${refs.join('和')}，请参照其中的角色特征和整体风格。`)
   }
 
   parts.push(`视觉设定：\n${visualContext}`)
@@ -51,7 +57,8 @@ export function buildShotImagePrompt(
 
   const refHint = hints.length > 0 ? hints.join('\n') + '\n\n' : ''
 
-  return `${refHint}请为以下分镜画面描述生成一张参考图：
+  return `${refHint}请为以下分镜描述绘制一张分镜稿画面（Storyboard Frame）。
+要求：构图清晰、景别明确、人物动态准确，分镜稿风格而非效果图。
 
 ${sceneDescription}`
 }

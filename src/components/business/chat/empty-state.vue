@@ -1,62 +1,24 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import BaseButton from '@/components/ui/base-button.vue'
-import { Clapperboard } from 'lucide-vue-next'
+import { Clapperboard, Sparkles, Video, ArrowDown } from 'lucide-vue-next'
 import { useSettingsStore } from '@/stores/settings-store'
 import { useGameStore } from '@/stores/game-store'
-import { useChat } from '@/composables/use-chat'
-import { useVideoAnalysis } from '@/composables/use-video-analysis'
 
 const emit = defineEmits<{
   'open-settings': []
   'open-game-manager': []
-  generate: []
-  'analyze-video': []
 }>()
 
 const settingsStore = useSettingsStore()
 const gameStore = useGameStore()
-const { generateScript, isGenerating } = useChat()
-const { analyzeVideo, analyzing } = useVideoAnalysis()
 
 const hasApiKey = computed(() => settingsStore.hasApiKey)
 const hasGame = computed(() => gameStore.hasGames)
 
-/** Scene A: no API key */
 const showNoKey = computed(() => !hasApiKey.value)
-
-/** Scene B: has key, no game */
 const showNoGame = computed(() => hasApiKey.value && !hasGame.value)
-
-/** Scene C: ready */
 const showReady = computed(() => hasApiKey.value && hasGame.value)
-
-const isDisabled = computed(() => isGenerating.value || analyzing.value)
-
-function handleOpenSettings() {
-  emit('open-settings')
-}
-
-function handleOpenGameManager() {
-  emit('open-game-manager')
-}
-
-async function handleGenerate() {
-  emit('generate')
-  await generateScript()
-}
-
-function handleAnalyzeClick() {
-  emit('analyze-video')
-  const input = document.createElement('input')
-  input.type = 'file'
-  input.accept = 'video/*'
-  input.onchange = () => {
-    const file = input.files?.[0]
-    if (file) analyzeVideo(file)
-  }
-  input.click()
-}
 </script>
 
 <template>
@@ -79,7 +41,7 @@ function handleAnalyzeClick() {
       <p class="text-sm text-center text-muted-foreground">
         本工具使用 AI 帮你写买量视频脚本。<br />需要先配置一个 AI 接口才能使用。
       </p>
-      <BaseButton variant="brand" @click="handleOpenSettings">
+      <BaseButton variant="brand" @click="emit('open-settings')">
         配置 AI 接口
       </BaseButton>
       <a
@@ -102,13 +64,13 @@ function handleAnalyzeClick() {
         添加游戏信息后，AI 生成的脚本会更贴合你的游戏。
       </p>
       <div class="flex gap-2">
-        <BaseButton variant="brand" @click="handleOpenGameManager">
+        <BaseButton variant="brand" @click="emit('open-game-manager')">
           添加游戏
         </BaseButton>
         <BaseButton
           variant="outline"
           title="你可以随时在右上角「游戏库」中添加"
-          @click="handleOpenGameManager"
+          @click="emit('open-game-manager')"
         >
           稍后再说
         </BaseButton>
@@ -129,39 +91,28 @@ function handleAnalyzeClick() {
         aria-hidden="true"
       />
       <h3 class="text-lg font-semibold leading-none tracking-tight">
-        一切就绪，两种用法
+        一切就绪，开始创作
       </h3>
       <div class="flex w-full flex-col gap-3">
-        <div class="rounded-lg border bg-muted/30 p-4">
-          <div class="mb-1 text-sm font-medium">1. 从零生成脚本</div>
-          <p class="text-xs text-muted-foreground">在左侧配置好参数，点击下方「生成脚本」按钮</p>
+        <div class="flex items-start gap-3 rounded-lg border bg-muted/30 p-4 text-left">
+          <Sparkles :size="18" class="mt-0.5 shrink-0 text-brand" />
+          <div>
+            <div class="mb-0.5 text-sm font-medium">从零生成脚本</div>
+            <p class="text-xs text-muted-foreground">在左侧配置好参数，点击下方「生成脚本」按钮</p>
+          </div>
         </div>
-        <div class="rounded-lg border bg-muted/30 p-4">
-          <div class="mb-1 text-sm font-medium">2. 分析已有视频</div>
-          <p class="text-xs text-muted-foreground">上传一个买量视频，AI 帮你分析优缺点并给出优化建议</p>
+        <div class="flex items-start gap-3 rounded-lg border bg-muted/30 p-4 text-left">
+          <Video :size="18" class="mt-0.5 shrink-0 text-brand" />
+          <div>
+            <div class="mb-0.5 text-sm font-medium">分析已有视频</div>
+            <p class="text-xs text-muted-foreground">上传一个买量视频，AI 帮你分析优缺点并给出优化建议</p>
+          </div>
         </div>
       </div>
-      <div class="flex flex-wrap items-center justify-center gap-2">
-        <BaseButton
-          variant="brand"
-          :disabled="isDisabled"
-          :loading="isGenerating"
-          @click="handleGenerate"
-        >
-          生成脚本
-        </BaseButton>
-        <BaseButton
-          variant="outline"
-          :disabled="isDisabled"
-          :loading="analyzing"
-          @click="handleAnalyzeClick"
-        >
-          上传视频分析
-        </BaseButton>
+      <div class="flex items-center gap-1.5 text-xs text-muted-foreground/60">
+        <ArrowDown :size="14" />
+        <span>使用下方操作栏开始</span>
       </div>
     </div>
   </div>
 </template>
-
-<style scoped>
-</style>

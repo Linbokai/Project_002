@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { History, Key, Gamepad2, RefreshCw } from 'lucide-vue-next'
+import { History, Key, Gamepad2, RefreshCw, SquarePen } from 'lucide-vue-next'
 import { APP_NAME } from '@/constants'
 import { useSettingsStore } from '@/stores/settings-store'
 import { useBalance } from '@/composables/use-balance'
@@ -11,6 +11,7 @@ const emit = defineEmits<{
   'open-history': []
   'open-api-settings': []
   'open-game-manager': []
+  'new-session': []
 }>()
 
 const settingsStore = useSettingsStore()
@@ -47,17 +48,25 @@ const balanceTooltip = computed(() => {
   return lines.join('\n')
 })
 
-function openHistory() {
-  emit('open-history')
-}
+const balanceLevel = computed<'normal' | 'warn' | 'danger'>(() => {
+  if (!keyInfo.value || !hasLimit.value) return 'normal'
+  const remaining = keyInfo.value.limitRemaining ?? 0
+  if (remaining < 0.1) return 'danger'
+  if (remaining < 1) return 'warn'
+  return 'normal'
+})
 
-function openApiSettings() {
-  emit('open-api-settings')
-}
+const balanceBorderClass = computed(() => {
+  if (balanceLevel.value === 'danger') return 'border-destructive bg-destructive/5'
+  if (balanceLevel.value === 'warn') return 'border-chart-4 bg-chart-4/5'
+  return 'border-border'
+})
 
-function openGameManager() {
-  emit('open-game-manager')
-}
+const balanceValueClass = computed(() => {
+  if (balanceLevel.value === 'danger') return 'text-destructive'
+  if (balanceLevel.value === 'warn') return 'text-chart-4'
+  return ''
+})
 </script>
 
 <template>
@@ -69,11 +78,12 @@ function openGameManager() {
     <div class="flex shrink-0 items-center gap-1">
       <div
         v-if="balanceText"
-        class="mr-1 flex items-center gap-1 rounded-md border border-border px-2 py-0.5"
+        class="mr-1 flex items-center gap-1 rounded-md border px-2 py-0.5 transition-colors"
+        :class="balanceBorderClass"
         :title="balanceTooltip"
       >
         <span class="text-xs text-muted-foreground">{{ balanceLabel }}</span>
-        <span class="text-xs font-medium tabular-nums">{{ balanceText }}</span>
+        <span class="text-xs font-medium tabular-nums" :class="balanceValueClass">{{ balanceText }}</span>
         <button
           class="inline-flex h-4 w-4 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
           :disabled="loading"
@@ -86,9 +96,18 @@ function openGameManager() {
       <BaseButton
         variant="ghost"
         size="icon"
+        title="新建会话"
+        aria-label="新建会话"
+        @click="emit('new-session')"
+      >
+        <SquarePen :size="16" />
+      </BaseButton>
+      <BaseButton
+        variant="ghost"
+        size="icon"
         title="游戏库管理"
         aria-label="游戏库管理"
-        @click="openGameManager"
+        @click="emit('open-game-manager')"
       >
         <Gamepad2 :size="16" />
       </BaseButton>
@@ -97,7 +116,7 @@ function openGameManager() {
         size="icon"
         title="历史记录"
         aria-label="历史记录"
-        @click="openHistory"
+        @click="emit('open-history')"
       >
         <History :size="16" />
       </BaseButton>
@@ -106,7 +125,7 @@ function openGameManager() {
         size="icon"
         title="AI 接口配置"
         :aria-label="settingsStore.hasApiKey ? 'AI 接口配置' : 'AI 接口配置（未配置）'"
-        @click="openApiSettings"
+        @click="emit('open-api-settings')"
       >
         <span class="relative">
           <Key :size="16" />

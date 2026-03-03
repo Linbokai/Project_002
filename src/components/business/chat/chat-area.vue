@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import { AlertCircle } from 'lucide-vue-next'
 import { useChatStore } from '@/stores/chat-store'
 import { GenerationStatus } from '@/models/enums'
@@ -16,6 +16,7 @@ const emit = defineEmits<{
 const chatStore = useChatStore()
 const { analyzing, progress } = useVideoAnalysis()
 const scrollContainer = ref<HTMLElement | null>(null)
+const userNearBottom = ref(true)
 
 const hasMessages = computed(() => chatStore.messages.length > 0)
 const hasError = computed(
@@ -33,13 +34,38 @@ const typingLabel = computed(() => {
   }
   return '生成中...'
 })
+const typingStages = computed(() => {
+  if (analyzing.value) return ['提取视频帧...', '分析画面内容...', '生成优化建议...']
+  if (isGenerating.value) return ['分析配置参数...', '构思脚本结构...', '撰写分镜脚本...']
+  return []
+})
+
+const SCROLL_THRESHOLD = 100
+
+function onScroll() {
+  if (!scrollContainer.value) return
+  const { scrollTop, scrollHeight, clientHeight } = scrollContainer.value
+  userNearBottom.value = scrollHeight - scrollTop - clientHeight < SCROLL_THRESHOLD
+}
+
+function scrollToBottom() {
+  if (scrollContainer.value) {
+    scrollContainer.value.scrollTop = scrollContainer.value.scrollHeight
+  }
+}
 
 watch(
-  [() => chatStore.messages.length, () => chatStore.currentStreamText],
+  () => chatStore.messages.length,
   () => {
-    if (scrollContainer.value) {
-      scrollContainer.value.scrollTop = scrollContainer.value.scrollHeight
-    }
+    userNearBottom.value = true
+    nextTick(scrollToBottom)
+  },
+)
+
+watch(
+  () => chatStore.currentStreamText,
+  () => {
+    if (userNearBottom.value) scrollToBottom()
   },
   { flush: 'post' },
 )
@@ -68,6 +94,7 @@ function handleOpenGameManager() {
       v-else
       ref="scrollContainer"
       class="flex flex-1 flex-col gap-4 overflow-auto px-4 py-4"
+      @scroll="onScroll"
     >
       <div class="flex flex-col gap-4">
         <MessageBubble
@@ -75,7 +102,7 @@ function handleOpenGameManager() {
           :key="idx"
           :message="msg"
         />
-        <TypingIndicator v-if="showTyping" :label="typingLabel" />
+        <TypingIndicator v-if="showTyping" :label="typingLabel" :stages="typingStages" />
         <div
           v-if="hasError"
           class="flex items-start gap-3 rounded-lg border border-destructive/50 bg-destructive/5 p-4"
