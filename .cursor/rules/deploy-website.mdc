@@ -16,7 +16,9 @@ alwaysApply: true
 - 登录用户: `linbokai@btfx-prd-cn-sh-1`
 - 私钥路径: `$env:USERPROFILE\.ssh\id_rsa`（Windows PowerShell）
 - 远程工作目录: `~/ai-model-hub`
-- Git 仓库: `https://github.com/Linbokai/Project_002.git`
+- Git 仓库: `https://github.com/Linbokai/Project_002.git`（Public 仓库）
+- 外部访问地址: `http://106.15.191.84:82/`
+- 内部服务端口: `8080`（运维通过端口映射 82 → 8080）
 
 ## 重要约束
 
@@ -49,7 +51,7 @@ git push origin main
 ### Step 3 — 服务器拉取最新代码
 
 ```powershell
-echo 'cd ~/ai-model-hub && git pull origin main && echo PULL_OK; exit' | ssh -T -i "$env:USERPROFILE\.ssh\id_rsa" -p 61022 -o ConnectTimeout=30 "linbokai@btfx-prd-cn-sh-1@pub.737.com"
+echo 'cd ~/ai-model-hub && git pull origin main 2>&1 && echo PULL_OK; exit' | ssh -T -i "$env:USERPROFILE\.ssh\id_rsa" -p 61022 -o ConnectTimeout=30 -o ServerAliveInterval=30 "linbokai@btfx-prd-cn-sh-1@pub.737.com"
 ```
 
 确认输出包含 `PULL_OK` 后继续。
@@ -57,7 +59,7 @@ echo 'cd ~/ai-model-hub && git pull origin main && echo PULL_OK; exit' | ssh -T 
 ### Step 4 — 重启服务
 
 ```powershell
-echo 'cd ~/ai-model-hub && bash deploy/setup.sh; exit' | ssh -T -i "$env:USERPROFILE\.ssh\id_rsa" -p 61022 -o ConnectTimeout=30 "linbokai@btfx-prd-cn-sh-1@pub.737.com"
+echo 'cd ~/ai-model-hub && bash deploy/setup.sh; exit' | ssh -T -i "$env:USERPROFILE\.ssh\id_rsa" -p 61022 -o ConnectTimeout=30 -o ServerAliveInterval=30 "linbokai@btfx-prd-cn-sh-1@pub.737.com"
 ```
 
 ### Step 5 — 验证部署结果
@@ -67,7 +69,7 @@ echo 'cd ~/ai-model-hub && bash deploy/setup.sh; exit' | ssh -T -i "$env:USERPRO
 如果部署失败，执行以下命令查看日志：
 
 ```powershell
-echo 'cat ~/ai-model-hub/server.log; exit' | ssh -T -i "$env:USERPROFILE\.ssh\id_rsa" -p 61022 -o ConnectTimeout=30 "linbokai@btfx-prd-cn-sh-1@pub.737.com"
+echo 'cat ~/ai-model-hub/server.log; exit' | ssh -T -i "$env:USERPROFILE\.ssh\id_rsa" -p 61022 -o ConnectTimeout=30 -o ServerAliveInterval=30 "linbokai@btfx-prd-cn-sh-1@pub.737.com"
 ```
 
 ## 服务器首次初始化（仅需执行一次）
@@ -75,7 +77,7 @@ echo 'cat ~/ai-model-hub/server.log; exit' | ssh -T -i "$env:USERPROFILE\.ssh\id
 如果服务器上还没有 Git 仓库，需要先执行初始化：
 
 ```powershell
-echo 'cd ~ && rm -rf ai-model-hub && git clone https://github.com/Linbokai/Project_002.git ai-model-hub && echo CLONE_OK; exit' | ssh -T -i "$env:USERPROFILE\.ssh\id_rsa" -p 61022 -o ConnectTimeout=30 "linbokai@btfx-prd-cn-sh-1@pub.737.com"
+echo 'cd ~ && rm -rf ai-model-hub && git clone --depth 1 https://github.com/Linbokai/Project_002.git ai-model-hub && echo CLONE_OK; exit' | ssh -T -i "$env:USERPROFILE\.ssh\id_rsa" -p 61022 -o ConnectTimeout=30 -o ServerAliveInterval=30 "linbokai@btfx-prd-cn-sh-1@pub.737.com"
 ```
 
 初始化完成后，按正常 Step 3~5 执行即可。
