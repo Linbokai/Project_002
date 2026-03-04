@@ -7,17 +7,26 @@ alwaysApply: true
 
 当用户说"更新网站"或类似的部署请求时，按以下步骤依次执行：
 
-## 服务器信息
+## 服务器连接信息
 
-- 用户: `fy-linbokai`
-- IP: `106.15.191.84`
-- 远程目录: `~/ai-model-hub`
+通过**堡垒机**连接，禁止直连 IP。
+
+- 堡垒机地址: `pub.737.com`
+- 堡垒机端口: `61022`
+- 登录用户: `linbokai@btfx-prd-cn-sh-1`
+- 私钥路径: `$env:USERPROFILE\.ssh\id_rsa`（Windows PowerShell）
+- 远程工作目录: `~/ai-model-hub`
+- Git 仓库: `https://github.com/Linbokai/Project_002.git`
+
+## 重要约束
+
+- **禁止生成新 SSH 密钥** — 已有 `id_rsa` 密钥且运维已加入白名单，任何情况下都不要运行 `ssh-keygen`
+- **禁止直连服务器 IP** — 必须通过堡垒机连接
+- 如果 SSH 连接失败，报告错误并等待用户处理，不要自行尝试生成密钥或修改 SSH 配置
 
 ## 执行步骤
 
-按顺序在终端中执行以下命令，每步确认成功后再继续下一步：
-
-### Step 1 — 构建项目
+### Step 1 — 本地构建
 
 ```bash
 pnpm build
@@ -25,20 +34,48 @@ pnpm build
 
 如果构建失败，停止部署并报告错误。
 
-### Step 2 — 增量同步到服务器
+### Step 2 — 提交并推送到 GitHub
+
+将构建产物提交到 main 分支并推送：
 
 ```bash
-rsync -avz --delete dist/ fy-linbokai@106.15.191.84:~/ai-model-hub/dist/
+git add dist/
+git commit -m "build: update dist for deployment"
+git push origin main
 ```
 
-仅传输变化的文件，`--delete` 清理服务器上已删除的旧文件。
+注意：`dist/` 已从 `.gitignore` 中移除，可以被 Git 追踪。如果当前不在 main 分支，先按项目 Git 规范合并到 main 后再推送。
 
-### Step 3 — 重启服务
+### Step 3 — 服务器拉取最新代码
 
-```bash
-ssh fy-linbokai@106.15.191.84 "cd ~/ai-model-hub && bash deploy/setup.sh"
+```powershell
+echo 'cd ~/ai-model-hub && git pull origin main && echo PULL_OK; exit' | ssh -T -i "$env:USERPROFILE\.ssh\id_rsa" -p 61022 -o ConnectTimeout=30 "linbokai@btfx-prd-cn-sh-1@pub.737.com"
 ```
 
-### Step 4 — 验证部署结果
+确认输出包含 `PULL_OK` 后继续。
 
-检查上一步输出中是否包含 `DEPLOY_SUCCESS`，向用户报告部署结果。
+### Step 4 — 重启服务
+
+```powershell
+echo 'cd ~/ai-model-hub && bash deploy/setup.sh; exit' | ssh -T -i "$env:USERPROFILE\.ssh\id_rsa" -p 61022 -o ConnectTimeout=30 "linbokai@btfx-prd-cn-sh-1@pub.737.com"
+```
+
+### Step 5 — 验证部署结果
+
+检查 Step 4 输出中是否包含 `DEPLOY_SUCCESS`，向用户报告部署结果。
+
+如果部署失败，执行以下命令查看日志：
+
+```powershell
+echo 'cat ~/ai-model-hub/server.log; exit' | ssh -T -i "$env:USERPROFILE\.ssh\id_rsa" -p 61022 -o ConnectTimeout=30 "linbokai@btfx-prd-cn-sh-1@pub.737.com"
+```
+
+## 服务器首次初始化（仅需执行一次）
+
+如果服务器上还没有 Git 仓库，需要先执行初始化：
+
+```powershell
+echo 'cd ~ && rm -rf ai-model-hub && git clone https://github.com/Linbokai/Project_002.git ai-model-hub && echo CLONE_OK; exit' | ssh -T -i "$env:USERPROFILE\.ssh\id_rsa" -p 61022 -o ConnectTimeout=30 "linbokai@btfx-prd-cn-sh-1@pub.737.com"
+```
+
+初始化完成后，按正常 Step 3~5 执行即可。
