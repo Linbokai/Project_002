@@ -25,6 +25,10 @@ import { SCRIPT_TYPES } from '@/constants/script-types'
 import { AUDIENCE_PROFILES } from '@/constants/audience-profiles'
 import { SELL_TAG_GROUPS } from '@/constants/sell-tags'
 
+defineProps<{
+  collapsed?: boolean
+}>()
+
 const configStore = useConfigStore()
 const gameStore = useGameStore()
 const themeRadarStore = useThemeRadarStore()
@@ -96,7 +100,11 @@ const sellTagCount = computed(() => configStore.config.selectedSellTags.length)
 </script>
 
 <template>
-  <aside class="flex h-full w-[450px] shrink-0 flex-col border-r border-border bg-card">
+  <aside
+    class="flex h-full shrink-0 flex-col border-r bg-card overflow-hidden transition-[width,border-color] duration-300"
+    :class="collapsed ? 'border-transparent' : 'border-border'"
+    :style="{ width: collapsed ? '0px' : 'clamp(300px, 28vw, 480px)' }"
+  >
     <div class="flex-1 overflow-y-auto">
 
       <!-- ==================== Section 1: Basic Config ==================== -->

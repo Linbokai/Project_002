@@ -9,6 +9,7 @@ import { useThemeRadarStore } from '@/stores/theme-radar-store'
 import { useGameplayRadarStore } from '@/stores/gameplay-radar-store'
 import { streamChat } from '@/services/api/openrouter-api'
 import { buildSystemPrompt } from '@/services/helpers/script-prompt-builder'
+import { SCRIPT_TYPES } from '@/constants/script-types'
 import {
   buildUeSystemPrompt,
   buildGameplayDirectionsPrompt,
@@ -117,9 +118,10 @@ export function useChat() {
       return
     }
 
+    const scriptTypeName = SCRIPT_TYPES.find((t) => t.id === genConfig.scriptType)?.name ?? ''
     const prompt = genConfig.direction === ProductionDirection.UeGameplay
       ? '请根据以上配置生成3D/UE创意玩法买量脚本。先输出玩法策划简案，再写分镜脚本。'
-      : '请根据以上配置生成买量视频脚本。'
+      : `请根据以上配置，严格按照「${scriptTypeName}」脚本类型的输出格式和创作规则，生成买量视频脚本。`
     await runGeneration(prompt)
   }
 
@@ -195,7 +197,7 @@ export function useChat() {
 
     const messages = [
       { role: 'system', content: systemPrompt },
-      ...chatStore.getMessagesForApi(),
+      ...chatStore.getMessagesForApi().slice(0, -1),
       { role: 'user', content: userPrompt },
     ]
 
@@ -235,7 +237,7 @@ export function useChat() {
     if (lastUserIndex === -1) return
 
     const lastUserMessage = list[lastUserIndex]!
-    chatStore.removeMessagesAfter(lastUserIndex)
+    chatStore.removeMessagesAfter(lastUserIndex - 1)
     await runGeneration(lastUserMessage.content)
   }
 

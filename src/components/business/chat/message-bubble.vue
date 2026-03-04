@@ -1,14 +1,17 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import type { ChatMessage } from '@/models/types'
 import { MessageType } from '@/models/enums'
+import { Copy } from 'lucide-vue-next'
 import ScriptActions from './script-actions.vue'
 import ScriptShotRenderer from './script-shot-renderer.vue'
 import AnalysisActions from './analysis-actions.vue'
 import ScriptDirectionActions from './script-direction-actions.vue'
 import MarkdownContent from '@/components/ui/markdown-content.vue'
+import BaseButton from '@/components/ui/base-button.vue'
 import { useGameStore } from '@/stores/game-store'
 import { useVideoAnalysis } from '@/composables/use-video-analysis'
+import { copyToClipboard } from '@/utils'
 
 const props = defineProps<{
   message: ChatMessage
@@ -25,6 +28,19 @@ const showScriptActions = computed(() => {
   if (props.message.type) return props.message.type === MessageType.Script
   return legacyHasScriptContent.value
 })
+
+const isSeedancePrompt = computed(() => {
+  return isAssistant.value && props.message.type === MessageType.SeedancePrompt
+})
+
+const seedanceCopied = ref(false)
+async function copySeedance() {
+  const ok = await copyToClipboard(props.message.content)
+  if (ok) {
+    seedanceCopied.value = true
+    setTimeout(() => (seedanceCopied.value = false), 1500)
+  }
+}
 
 const showAnalysisActions = computed(() => {
   if (!isAssistant.value || !props.message.content) return false
@@ -80,6 +96,15 @@ const gameName = computed(() => gameStore.currentGame?.name ?? '脚本')
       :content="message.content || ''"
       :message-timestamp="message.timestamp"
     />
+    <template v-else-if="isSeedancePrompt">
+      <MarkdownContent :content="message.content || ''" />
+      <div class="flex items-center gap-1.5 pt-2">
+        <BaseButton variant="ghost" size="sm" class="h-7 px-2 text-xs" @click="copySeedance">
+          <Copy :size="12" />
+          {{ seedanceCopied ? '已复制' : '复制提示词' }}
+        </BaseButton>
+      </div>
+    </template>
     <MarkdownContent
       v-else-if="showGameplayDirectionActions || useMarkdown"
       :content="message.content || ''"
@@ -92,6 +117,7 @@ const gameName = computed(() => gameStore.currentGame?.name ?? '脚本')
       v-if="showScriptActions"
       :script-text="message.content"
       :game-name="gameName"
+      :message-timestamp="message.timestamp"
     />
     <AnalysisActions
       v-if="showAnalysisActions"

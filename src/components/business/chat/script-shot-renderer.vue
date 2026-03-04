@@ -1,10 +1,8 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { ChevronDown, ChevronRight, ImagePlus, Loader2, Pencil, X, Upload, User, Palette } from 'lucide-vue-next'
+import { ChevronDown, ChevronRight, Loader2, Pencil, X, Upload, User, Palette } from 'lucide-vue-next'
 import { parseFrames } from '@/services/helpers/frame-parser'
 import { useImageStore } from '@/stores/image-store'
-import { useShotImage } from '@/composables/use-shot-image'
-import ShotImageBlock from './shot-image-block.vue'
 import BaseButton from '@/components/ui/base-button.vue'
 import type { ReferenceImage, ReferenceImageType } from '@/models/types'
 
@@ -79,30 +77,7 @@ function cancelEditContext() {
   contextEditing.value = false
 }
 
-const batchGenerating = ref(false)
-
-async function generateAll() {
-  if (batchGenerating.value) return
-  batchGenerating.value = true
-
-  for (const shot of shots.value) {
-    if (!shot.scene) continue
-    const shotKey = `${scriptKey.value}-${shot.id}`
-    if (imageStore.getImage(shotKey)) continue
-
-    const { generate } = useShotImage(scriptKey.value, shotKey)
-    await generate(shot.scene, props.content)
-  }
-
-  batchGenerating.value = false
-}
-
-function shotKey(shotId: number): string {
-  return `${scriptKey.value}-${shotId}`
-}
-
 const fieldLabels: Record<string, string> = {
-  voiceover: '台词',
   textOverlay: '字幕',
   camera: '镜头',
   vfx: '特效',
@@ -303,18 +278,20 @@ const fieldLabels: Record<string, string> = {
         </span>
       </div>
 
-      <!-- 画面 + 生图 -->
+      <!-- 画面 -->
       <div v-if="shot.scene" class="mb-1">
         <div class="flex items-start gap-1">
           <span class="shrink-0 text-xs font-medium text-muted-foreground">画面:</span>
           <span class="whitespace-pre-wrap text-xs leading-relaxed text-foreground">{{ shot.scene }}</span>
         </div>
-        <ShotImageBlock
-          :shot-key="shotKey(shot.id)"
-          :script-key="scriptKey"
-          :scene-text="shot.scene"
-          :script-content="content"
-        />
+      </div>
+
+      <!-- 口播台词 -->
+      <div v-if="shot.voiceover" class="mb-1">
+        <div class="flex items-start gap-1">
+          <span class="shrink-0 text-xs font-medium text-muted-foreground">台词:</span>
+          <span class="whitespace-pre-wrap text-xs leading-relaxed text-foreground">{{ shot.voiceover }}</span>
+        </div>
       </div>
 
       <!-- 其他字段 -->
@@ -331,19 +308,5 @@ const fieldLabels: Record<string, string> = {
       </template>
     </div>
 
-    <!-- 一键全部生图 -->
-    <div class="flex items-center gap-2 pt-2">
-      <BaseButton
-        variant="outline"
-        size="sm"
-        class="h-7 gap-1 px-2.5 text-xs"
-        :loading="batchGenerating"
-        :disabled="batchGenerating"
-        @click="generateAll"
-      >
-        <ImagePlus :size="12" />
-        一键全部生图
-      </BaseButton>
-    </div>
   </div>
 </template>

@@ -4,6 +4,7 @@ export interface ImageSessionData {
   sessionId: string
   images: Record<string, GeneratedImage>
   contexts: Record<string, VisualContext>
+  gridImages?: Record<string, GeneratedImage>
 }
 
 const DB_NAME = 'sg_image_db'
@@ -28,12 +29,13 @@ export async function saveSessionImages(
   sessionId: string,
   images: Record<string, GeneratedImage>,
   contexts: Record<string, VisualContext>,
+  gridImages?: Record<string, GeneratedImage>,
 ): Promise<void> {
   try {
     const db = await openDB()
     const tx = db.transaction(STORE_NAME, 'readwrite')
     const store = tx.objectStore(STORE_NAME)
-    store.put({ sessionId, images, contexts } satisfies ImageSessionData)
+    store.put({ sessionId, images, contexts, gridImages } satisfies ImageSessionData)
     await new Promise<void>((resolve, reject) => {
       tx.oncomplete = () => resolve()
       tx.onerror = () => reject(tx.error)

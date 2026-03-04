@@ -17,10 +17,10 @@ export function buildSystemPrompt(
   const scriptType = SCRIPT_TYPES.find((t) => t.id === config.scriptType)
 
   sections.push(buildRoleSection(scriptType?.role))
+  sections.push(buildScriptTypeSection(config))
   sections.push(buildHookSection(config))
   sections.push(buildRhythmSection(config.duration))
   sections.push(buildContextSection(config, game))
-  sections.push(buildScriptTypeSection(config))
 
   if (extraContext) {
     sections.push(`## 补充上下文\n${extraContext}`)
@@ -103,11 +103,13 @@ function buildScriptTypeSection(config: GenerationConfig): string {
   if (!scriptType) return ''
 
   const lines = [
-    `## 脚本类型：${scriptType.name}`,
+    `## 最高优先级：脚本类型 —「${scriptType.name}」`,
     '',
-    `### 输出格式\n${scriptType.format}`,
+    `> ⚠️ 你必须严格按照「${scriptType.name}」的输出格式和创作规则生成脚本。这是不可违反的硬性约束。`,
     '',
-    '### 创作规则',
+    `### 输出格式（必须逐字段输出，禁止合并或省略）\n${scriptType.format}`,
+    '',
+    '### 创作规则（必须全部遵守）',
     ...scriptType.rules.map((r) => `- ${r}`),
   ]
 
@@ -151,8 +153,9 @@ ${SEEDANCE_PROMPT_GUIDE}
 4. Add consistency constraints and physics requirements at the end
 5. Use specific style anchors (director name / film style) instead of vague terms like "cinematic"
 6. Keep each shot segment to 3-5 seconds with precise timecodes
-7. Total prompt must not exceed 2000 characters
-8. Output ONLY the final Seedance prompt — no explanation, no markdown wrapping${safetyRules}
+7. When referencing characters, use @[图片1], @[图片2], etc. to bind the corresponding character reference images (e.g. "@[图片1] as character reference")
+8. Total prompt must not exceed 2000 characters
+9. Output ONLY the final Seedance prompt — no explanation, no markdown wrapping${safetyRules}
 
 ## Source Script
 
@@ -173,8 +176,9 @@ ${SEEDANCE_PROMPT_GUIDE}
 4. 用具体风格锚点（导演名/电影风格/艺术流派），不要用模糊的"电影感"
 5. 每个镜头片段控制在 3-5 秒，时间码必须精确
 6. 描述物理动作而非抽象概念（"碎石沿斜面滑落"而非"震撼的效果"）
-7. 总提示词不超过 2000 字符
-8. 只输出最终的 Seedance 提示词，不要解释、不要包裹 markdown${safetyRules}
+7. 涉及角色时，使用 @[图片1]、@[图片2] 等格式绑定对应的角色参考图（如 "@[图片1] as character reference"）
+8. 总提示词不超过 2000 字符
+9. 只输出最终的 Seedance 提示词，不要解释、不要包裹 markdown${safetyRules}
 
 ## 原始脚本
 
