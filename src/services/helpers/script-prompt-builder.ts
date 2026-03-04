@@ -14,8 +14,9 @@ export function buildSystemPrompt(
   extraContext?: string,
 ): string {
   const sections: string[] = []
+  const scriptType = SCRIPT_TYPES.find((t) => t.id === config.scriptType)
 
-  sections.push(buildRoleSection())
+  sections.push(buildRoleSection(scriptType?.role))
   sections.push(buildHookSection(config))
   sections.push(buildRhythmSection(config.duration))
   sections.push(buildContextSection(config, game))
@@ -28,11 +29,11 @@ export function buildSystemPrompt(
   return sections.join('\n\n')
 }
 
-function buildRoleSection(): string {
-  return `## 角色
-你是一位顶级手游买量创意总监，拥有10年买量视频创作经验。
-你深谙各平台（抖音/快手/B站/TikTok/Facebook/YouTube）的用户注意力规律。
-你的核心信念：前3秒决定一切——钩子不够强，后面全白费。`
+function buildRoleSection(scriptRole?: string): string {
+  const base = scriptRole
+    ? `## 角色\n${scriptRole}`
+    : `## 角色\n你是一位顶级手游买量创意总监，拥有10年买量视频创作经验。`
+  return `${base}\n你深谙各平台（抖音/快手/B站/TikTok/Facebook/YouTube）的用户注意力规律。\n你的核心信念：前3秒决定一切——钩子不够强，后面全白费。`
 }
 
 function buildHookSection(config: GenerationConfig): string {
@@ -87,7 +88,7 @@ function buildContextSection(config: GenerationConfig, game: Game | null): strin
     }
   }
 
-  lines.push(`\n### 视频参数\n- 时长：${config.duration}秒\n- 画面比例：${config.aspectRatio}`)
+  lines.push(`\n### 视频参数\n- 画面比例：${config.aspectRatio}`)
   lines.push(buildCompositionGuide(config.aspectRatio))
 
   if (config.additionalRequirements) {
@@ -103,8 +104,6 @@ function buildScriptTypeSection(config: GenerationConfig): string {
 
   const lines = [
     `## 脚本类型：${scriptType.name}`,
-    '',
-    `### 角色要求\n${scriptType.role}`,
     '',
     `### 输出格式\n${scriptType.format}`,
     '',

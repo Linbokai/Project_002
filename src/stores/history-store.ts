@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import type { ChatSession } from '@/models/types'
 import { STORAGE_KEYS, HISTORY_MAX } from '@/constants'
 import { getItem, setItem, generateId } from '@/utils'
+import { deleteSessionImages, clearAllSessionImages } from '@/utils/image-db'
 
 export const useHistoryStore = defineStore('history', () => {
   const sessions = ref<ChatSession[]>(
@@ -21,7 +22,9 @@ export const useHistoryStore = defineStore('history', () => {
     }
     sessions.value.unshift(newSession)
     if (sessions.value.length > HISTORY_MAX) {
+      const removed = sessions.value.slice(HISTORY_MAX)
       sessions.value = sessions.value.slice(0, HISTORY_MAX)
+      for (const s of removed) deleteSessionImages(s.id)
     }
     persist()
     return newSession.id
@@ -30,11 +33,13 @@ export const useHistoryStore = defineStore('history', () => {
   function removeSession(id: string) {
     sessions.value = sessions.value.filter((s) => s.id !== id)
     persist()
+    deleteSessionImages(id)
   }
 
   function clearAll() {
     sessions.value = []
     persist()
+    clearAllSessionImages()
   }
 
   function updateSession(id: string, patch: Partial<Pick<ChatSession, 'messages' | 'preview' | 'themes'>>) {
