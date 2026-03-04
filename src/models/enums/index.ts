@@ -81,4 +81,5 @@ export enum MessageType {
   Optimization = 'optimization',
   ScriptDirection = 'script_direction',
   GameplayDirection = 'gameplay_direction',
+  SeedancePrompt = 'seedance_prompt',
 }

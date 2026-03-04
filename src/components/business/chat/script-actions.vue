@@ -1,28 +1,32 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import BaseButton from '@/components/ui/base-button.vue'
-import { Copy, Download, Languages, Shield, ShieldOff } from 'lucide-vue-next'
+import ImagePreview from './image-preview.vue'
+import { Copy, Download, Grid3x3, Film, Languages, AlertCircle } from 'lucide-vue-next'
 import { useScriptExport } from '@/composables/use-script-export'
+import { useStoryboardGrid } from '@/composables/use-storyboard-grid'
+import { useShotImage } from '@/composables/use-shot-image'
+import { useImageStore } from '@/stores/image-store'
+import { parseFrames } from '@/services/helpers/frame-parser'
 import { useToast } from '@/composables/use-toast'
 
 const props = defineProps<{
   scriptText: string
   gameName: string
+  messageTimestamp: number
 }>()
 
-const {
-  copyScript,
-  downloadScript,
-  convertToSeedance,
-  safeMode,
-  toggleSafeMode,
-} = useScriptExport()
+const scriptKey = computed(() => String(props.messageTimestamp))
+
+const { copyScript, downloadScript, convertToSeedance } = useScriptExport()
+const { gridImage, loading: gridLoading, error: gridError, generateGrid } = useStoryboardGrid(scriptKey.value)
+const imageStore = useImageStore()
 const { showToast } = useToast()
 
-const seedanceZhLoading = ref(false)
-const seedanceEnLoading = ref(false)
-const seedanceZhDone = ref(false)
 const copied = ref(false)
+const seedanceLoading = ref(false)
+const shotBatchLoading = ref(false)
+const gridPreviewOpen = ref(false)
 
 async function handleCopy() {
   const ok = await copyScript(props.scriptText)
@@ -36,91 +40,131 @@ function handleDownload() {
   downloadScript(props.scriptText, props.gameName)
 }
 
-async function handleSeedance(lang: 'zh' | 'en') {
-  if (lang === 'zh') {
-    seedanceZhLoading.value = true
-  } else {
-    seedanceEnLoading.value = true
+async function handleGridGenerate() {
+  await generateGrid(props.scriptText)
+  if (!gridError.value) {
+    showToast('九宫格分镜概览已生成', 'success')
   }
+}
+
+async function handleShotBatch() {
+  if (shotBatchLoading.value) return
+  shotBatchLoading.value = true
+
+  const shots = parseFrames(props.scriptText)
+  for (const shot of shots) {
+    if (!shot.scene) continue
+    const shotKey = `${scriptKey.value}-${shot.id}`
+    if (imageStore.getImage(shotKey)) continue
+
+    const { generate } = useShotImage(scriptKey.value, shotKey)
+    await generate(shot.scene, props.scriptText)
+  }
+
+  shotBatchLoading.value = false
+  showToast('逐镜头分镜图已生成', 'success')
+}
+
+async function handleSeedance() {
+  seedanceLoading.value = true
   try {
-    await convertToSeedance(props.scriptText, lang)
-    if (lang === 'zh') seedanceZhDone.value = true
-    showToast('视频提示词已生成，请在聊天窗口查看', 'success')
+    await convertToSeedance(props.scriptText, 'zh')
+    showToast('Seedance 提示词已生成，请在聊天窗口查看', 'success')
   } catch (e) {
     const msg = e instanceof Error ? e.message : '转化失败'
     showToast(msg, 'destructive')
   } finally {
-    seedanceZhLoading.value = false
-    seedanceEnLoading.value = false
+    seedanceLoading.value = false
   }
 }
 </script>
 
 <template>
-  <div class="flex flex-wrap items-center gap-1.5 pt-2">
-    <BaseButton
-      variant="ghost"
-      size="sm"
-      class="h-7 px-2 text-xs"
-      title="复制脚本内容到剪贴板"
-      aria-label="复制脚本"
-      @click="handleCopy"
+  <div class="space-y-2 pt-2">
+    <!-- 操作按钮 -->
+    <div class="flex flex-wrap items-center gap-1.5">
+      <BaseButton
+        variant="ghost"
+        size="sm"
+        class="h-7 px-2 text-xs"
+        @click="handleCopy"
+      >
+        <Copy :size="12" />
+        {{ copied ? '已复制' : '复制脚本' }}
+      </BaseButton>
+      <BaseButton
+        variant="ghost"
+        size="sm"
+        class="h-7 px-2 text-xs"
+        @click="handleDownload"
+      >
+        <Download :size="12" />
+        下载脚本
+      </BaseButton>
+
+      <span class="mx-0.5 h-4 w-px bg-border/60" />
+
+      <BaseButton
+        variant="outline"
+        size="sm"
+        class="h-7 px-2 text-xs"
+        :loading="gridLoading"
+        :disabled="gridLoading || shotBatchLoading"
+        @click="handleGridGenerate"
+      >
+        <Grid3x3 v-if="!gridLoading" :size="12" />
+        {{ gridImage ? '重新生成九宫格' : '九宫格概览' }}
+      </BaseButton>
+      <BaseButton
+        variant="outline"
+        size="sm"
+        class="h-7 px-2 text-xs"
+        :loading="shotBatchLoading"
+        :disabled="gridLoading || shotBatchLoading"
+        @click="handleShotBatch"
+      >
+        <Film v-if="!shotBatchLoading" :size="12" />
+        逐镜头分镜
+      </BaseButton>
+
+      <span class="mx-0.5 h-4 w-px bg-border/60" />
+
+      <BaseButton
+        variant="ghost"
+        size="sm"
+        class="h-7 px-2 text-xs"
+        :loading="seedanceLoading"
+        :disabled="seedanceLoading"
+        @click="handleSeedance"
+      >
+        <Languages v-if="!seedanceLoading" :size="12" />
+        转为Seedance提示词
+      </BaseButton>
+    </div>
+
+    <!-- 九宫格生图错误提示 -->
+    <div
+      v-if="gridError"
+      class="flex items-center gap-1.5 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive"
     >
-      <Copy :size="12" />
-      {{ copied ? '已复制' : '复制脚本' }}
-    </BaseButton>
-    <BaseButton
-      variant="ghost"
-      size="sm"
-      class="h-7 px-2 text-xs"
-      title="下载脚本为文本文件"
-      aria-label="下载脚本"
-      @click="handleDownload"
-    >
-      <Download :size="12" />
-      下载脚本
-    </BaseButton>
-    <BaseButton
-      variant="ghost"
-      size="sm"
-      class="h-7 px-2 text-xs"
-      :loading="seedanceZhLoading"
-      :disabled="seedanceZhLoading || seedanceEnLoading"
-      title="将脚本转换为 Seedance 2.0 视频生成平台的提示词格式"
-      aria-label="转为Seedance提示词"
-      @click="handleSeedance('zh')"
-    >
-      <Languages :size="12" />
-      转为Seedance提示词
-    </BaseButton>
-    <BaseButton
-      v-if="seedanceZhDone"
-      variant="ghost"
-      size="sm"
-      class="h-7 px-2 text-xs"
-      :loading="seedanceEnLoading"
-      :disabled="seedanceZhLoading || seedanceEnLoading"
-      title="Convert script to Seedance 2.0 prompt in English"
-      aria-label="Seedance Prompt (EN)"
-      @click="handleSeedance('en')"
-    >
-      <Languages :size="12" />
-      Seedance Prompt (EN)
-    </BaseButton>
-    <BaseButton
-      variant="ghost"
-      size="sm"
-      class="h-7 px-2 text-xs"
-      title="开启后自动替换脚本中的暴力/敏感内容，适合平台审核严格的渠道"
-      aria-label="切换安全模式"
-      @click="toggleSafeMode"
-    >
-      <Shield v-if="safeMode" :size="12" />
-      <ShieldOff v-else :size="12" />
-      {{ safeMode ? '安全模式：开' : '安全模式：关' }}
-    </BaseButton>
+      <AlertCircle :size="12" />
+      {{ gridError }}
+    </div>
+
+    <!-- 九宫格结果预览 -->
+    <div v-if="gridImage" class="rounded-md border border-border/40 bg-muted/20 p-2">
+      <div class="mb-1.5 text-xs font-medium text-muted-foreground">九宫格分镜概览</div>
+      <img
+        :src="gridImage.url"
+        alt="九宫格分镜概览"
+        class="w-full cursor-pointer rounded-md border border-border/30 transition-opacity hover:opacity-90"
+        @click="gridPreviewOpen = true"
+      />
+      <ImagePreview
+        v-if="gridPreviewOpen"
+        :url="gridImage.url"
+        @close="gridPreviewOpen = false"
+      />
+    </div>
   </div>
 </template>
-
-<style scoped>
-</style>

@@ -5,6 +5,7 @@ import { useConfigStore } from '@/stores/config-store'
 import { useGameStore } from '@/stores/game-store'
 import { useSettingsStore } from '@/stores/settings-store'
 import { useHistoryStore } from '@/stores/history-store'
+import { useImageStore } from '@/stores/image-store'
 import { useThemeRadarStore } from '@/stores/theme-radar-store'
 import { useGameplayRadarStore } from '@/stores/gameplay-radar-store'
 import { streamChat } from '@/services/api/openrouter-api'
@@ -31,6 +32,7 @@ export function useVideoAnalysis() {
   const gameStore = useGameStore()
   const settingsStore = useSettingsStore()
   const historyStore = useHistoryStore()
+  const imageStore = useImageStore()
   const themeRadarStore = useThemeRadarStore()
   const gameplayRadarStore = useGameplayRadarStore()
   const { showToast } = useToast()
@@ -50,9 +52,12 @@ export function useVideoAnalysis() {
 
     if (chatStore.currentSessionId) {
       historyStore.updateSession(chatStore.currentSessionId, { messages: msgs, preview, themes })
+      imageStore.persistToSession(chatStore.currentSessionId)
     } else {
       const id = historyStore.addSession({ messages: msgs, gameName, themes, preview })
       chatStore.currentSessionId = id
+      imageStore.bindSession(id)
+      imageStore.persistToSession(id)
     }
   }
 
@@ -234,7 +239,7 @@ export function useVideoAnalysis() {
 
     const messages = [
       { role: 'system', content: systemPrompt },
-      ...chatStore.getMessagesForApi(),
+      ...chatStore.getMessagesForApi().slice(0, -1),
       { role: 'user', content: userPrompt },
     ]
 

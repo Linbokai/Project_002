@@ -1,11 +1,10 @@
-import { ref, unref } from 'vue'
+import { unref } from 'vue'
 import { copyToClipboard, downloadText } from '@/utils'
 import { buildSeedancePrompt } from '@/services/helpers/script-prompt-builder'
 import { chatCompletion } from '@/services/api/openrouter-api'
 import { useSettingsStore } from '@/stores/settings-store'
 import { useChatStore } from '@/stores/chat-store'
-import { STORAGE_KEYS } from '@/constants'
-import { getItem, setItem } from '@/utils'
+import { MessageType } from '@/models/enums'
 
 function formatExportFilename(gameName: string): string {
   const safe = (gameName || '脚本').replace(/[<>:"/\\|?*]/g, '_')
@@ -16,15 +15,6 @@ function formatExportFilename(gameName: string): string {
 export function useScriptExport() {
   const settingsStore = useSettingsStore()
   const chatStore = useChatStore()
-
-  const safeMode = ref<boolean>(
-    getItem<boolean>(STORAGE_KEYS.SAFE_MODE, false),
-  )
-
-  function toggleSafeMode(): void {
-    safeMode.value = !safeMode.value
-    setItem(STORAGE_KEYS.SAFE_MODE, safeMode.value)
-  }
 
   async function copyScript(text: string): Promise<boolean> {
     return copyToClipboard(text)
@@ -50,10 +40,10 @@ export function useScriptExport() {
       content: `将脚本转为 Seedance 视频提示词（${label}）`,
       timestamp: Date.now(),
     })
-    chatStore.startGeneration()
+    chatStore.startGeneration(MessageType.SeedancePrompt)
 
     try {
-      const prompt = buildSeedancePrompt(script, lang, safeMode.value)
+      const prompt = buildSeedancePrompt(script, lang, false)
       const response = await chatCompletion({
         config,
         model: settingsStore.getModelForTask('gen'),
@@ -77,7 +67,5 @@ export function useScriptExport() {
     copyScript,
     downloadScript,
     convertToSeedance,
-    safeMode,
-    toggleSafeMode,
   }
 }

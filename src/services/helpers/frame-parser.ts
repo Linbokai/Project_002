@@ -3,7 +3,7 @@ import type { Shot } from '@/models/types'
 const FIELD_DEFS = [
   { field: 'scale', keys: ['景别', '景', 'scale', 'framing'] },
   { field: 'scene', keys: ['画面', '场景', 'scene', '视觉'] },
-  { field: 'voiceover', keys: ['台词', '旁白', '口播', 'voiceover', 'VO', '对白'] },
+  { field: 'voiceover', keys: ['口播台词', '台词', '旁白', '口播', 'voiceover', 'VO', '对白'] },
   { field: 'textOverlay', keys: ['字幕', '花字', '文字', '文案'] },
   { field: 'camera', keys: ['镜头', '镜头运动', '镜头路径', 'camera', '运镜', '机位'] },
   { field: 'vfx', keys: ['特效', '特效分层', 'vfx', 'effects'] },
