@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { reactive } from 'vue'
 import type { GeneratedImage, VisualContext, ShotImageKey, ScriptKey } from '@/models/types'
+import { saveSessionImages, loadSessionImages } from '@/utils/image-db'
 
 export const useImageStore = defineStore('image', () => {
   const imageMap = reactive(new Map<ShotImageKey, GeneratedImage>())
@@ -9,6 +10,8 @@ export const useImageStore = defineStore('image', () => {
 
   const contextMap = reactive(new Map<ScriptKey, VisualContext>())
   const contextLoadingSet = reactive(new Set<ScriptKey>())
+
+  let currentSessionId: string | null = null
 
   function getImage(key: ShotImageKey): GeneratedImage | undefined {
     return imageMap.get(key)
@@ -71,6 +74,48 @@ export const useImageStore = defineStore('image', () => {
     return images.sort((a, b) => a.createdAt - b.createdAt)
   }
 
+  function getSnapshot(): { images: Record<string, GeneratedImage>; contexts: Record<string, VisualContext> } {
+    const images: Record<string, GeneratedImage> = {}
+    for (const [k, v] of imageMap) images[k] = v
+    const contexts: Record<string, VisualContext> = {}
+    for (const [k, v] of contextMap) contexts[k] = v
+    return { images, contexts }
+  }
+
+  function clearAll() {
+    imageMap.clear()
+    loadingSet.clear()
+    errorMap.clear()
+    contextMap.clear()
+    contextLoadingSet.clear()
+    currentSessionId = null
+  }
+
+  async function loadSession(sessionId: string) {
+    clearAll()
+    currentSessionId = sessionId
+    const data = await loadSessionImages(sessionId)
+    if (!data) return
+    for (const [k, v] of Object.entries(data.images)) imageMap.set(k, v)
+    for (const [k, v] of Object.entries(data.contexts)) contextMap.set(k, v)
+  }
+
+  async function persistToSession(sessionId?: string | null) {
+    const id = sessionId ?? currentSessionId
+    if (!id) return
+    currentSessionId = id
+    const { images, contexts } = getSnapshot()
+    await saveSessionImages(id, images, contexts)
+  }
+
+  function bindSession(sessionId: string) {
+    currentSessionId = sessionId
+  }
+
+  function getSessionId(): string | null {
+    return currentSessionId
+  }
+
   return {
     getImage,
     setImage,
@@ -83,5 +128,11 @@ export const useImageStore = defineStore('image', () => {
     isContextLoading,
     setContextLoading,
     getScriptImages,
+    getSnapshot,
+    clearAll,
+    loadSession,
+    persistToSession,
+    bindSession,
+    getSessionId,
   }
 })

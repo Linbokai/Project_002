@@ -10,6 +10,7 @@ import HistoryPanel from '@/components/business/modals/history-panel.vue'
 import BaseToast from '@/components/ui/base-toast.vue'
 import { useHistoryStore } from '@/stores/history-store'
 import { useChatStore } from '@/stores/chat-store'
+import { useImageStore } from '@/stores/image-store'
 
 const historyOpen = ref(false)
 const apiSettingsOpen = ref(false)
@@ -29,12 +30,15 @@ function handleOpenGameManager() {
 
 const historyStore = useHistoryStore()
 const chatStore = useChatStore()
+const imageStore = useImageStore()
 
-function handleLoadSession(id: string) {
+async function handleLoadSession(id: string) {
   const session = historyStore.getSession(id)
   if (!session) return
   chatStore.clearMessages()
+  chatStore.currentSessionId = id
   session.messages.forEach((m) => chatStore.addMessage(m))
+  await imageStore.loadSession(id)
   historyOpen.value = false
 }
 </script>
@@ -46,7 +50,7 @@ function handleLoadSession(id: string) {
       <ConfigPanel />
       <div class="flex flex-1 flex-col overflow-hidden">
         <AppHeader
-          @new-session="chatStore.clearMessages()"
+          @new-session="chatStore.clearMessages(); imageStore.clearAll()"
           @open-history="handleOpenHistory"
           @open-api-settings="handleOpenApiSettings"
           @open-game-manager="handleOpenGameManager"

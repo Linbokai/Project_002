@@ -96,6 +96,7 @@ export function useShotImage(scriptKey: ScriptKey, shotKey: ShotImageKey) {
           model: settingsStore.getModelForTask('image'),
           createdAt: Date.now(),
         })
+        imageStore.persistToSession()
       } else {
         imageStore.setError(shotKey, '模型未返回图片')
       }

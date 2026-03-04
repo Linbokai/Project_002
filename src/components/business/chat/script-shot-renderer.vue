@@ -72,6 +72,7 @@ function saveContext() {
     styleImages: [...styleImagesDraft.value],
   })
   contextEditing.value = false
+  imageStore.persistToSession()
 }
 
 function cancelEditContext() {
@@ -104,6 +105,7 @@ const fieldLabels: Record<string, string> = {
   voiceover: '台词',
   textOverlay: '字幕',
   camera: '镜头',
+  vfx: '特效',
   transition: '转场',
   sfx: '音效',
   notes: '备注',
@@ -288,13 +290,16 @@ const fieldLabels: Record<string, string> = {
       :key="shot.id"
       class="rounded-md border border-border/40 bg-card/50 px-3 py-2.5"
     >
-      <!-- 时间 + 段名 -->
+      <!-- 时间 + 段名 + 景别 -->
       <div class="mb-1.5 flex items-baseline gap-2">
         <span v-if="shot.timeRange" class="text-xs font-mono font-semibold text-brand">
           {{ shot.timeRange }}
         </span>
         <span class="text-xs font-medium text-foreground">
           {{ shot.segment }}
+        </span>
+        <span v-if="shot.scale" class="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
+          {{ shot.scale }}
         </span>
       </div>
 

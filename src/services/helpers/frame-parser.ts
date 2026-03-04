@@ -1,12 +1,14 @@
 import type { Shot } from '@/models/types'
 
 const FIELD_DEFS = [
+  { field: 'scale', keys: ['景别', '景', 'scale', 'framing'] },
   { field: 'scene', keys: ['画面', '场景', 'scene', '视觉'] },
   { field: 'voiceover', keys: ['台词', '旁白', '口播', 'voiceover', 'VO', '对白'] },
   { field: 'textOverlay', keys: ['字幕', '花字', '文字', '文案'] },
-  { field: 'camera', keys: ['镜头', 'camera', '运镜', '机位'] },
+  { field: 'camera', keys: ['镜头', '镜头运动', '镜头路径', 'camera', '运镜', '机位'] },
+  { field: 'vfx', keys: ['特效', '特效分层', 'vfx', 'effects'] },
   { field: 'transition', keys: ['转场', 'transition'] },
-  { field: 'sfx', keys: ['音效', 'sfx', 'BGM', '音乐'] },
+  { field: 'sfx', keys: ['音效', 'sfx', 'BGM', '音乐', 'BGM/情绪', 'BGM/音效'] },
   { field: 'notes', keys: ['备注', 'notes', '说明'] },
 ] as const
 
@@ -19,10 +21,12 @@ const fieldLabelRe = new RegExp(
 )
 
 interface ExtractedFields {
+  scale?: string
   scene: string
   voiceover: string
   textOverlay?: string
   camera?: string
+  vfx?: string
   transition?: string
   sfx?: string
   notes?: string
@@ -64,10 +68,12 @@ function extractAllFields(block: string): ExtractedFields {
   }
 
   return {
+    scale: result.scale,
     scene: result.scene ?? '',
     voiceover: result.voiceover ?? '',
     textOverlay: result.textOverlay,
     camera: result.camera,
+    vfx: result.vfx,
     transition: result.transition,
     sfx: result.sfx,
     notes: result.notes,

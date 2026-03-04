@@ -21,6 +21,7 @@ const { showToast } = useToast()
 
 const seedanceZhLoading = ref(false)
 const seedanceEnLoading = ref(false)
+const seedanceZhDone = ref(false)
 const copied = ref(false)
 
 async function handleCopy() {
@@ -43,6 +44,7 @@ async function handleSeedance(lang: 'zh' | 'en') {
   }
   try {
     await convertToSeedance(props.scriptText, lang)
+    if (lang === 'zh') seedanceZhDone.value = true
     showToast('视频提示词已生成，请在聊天窗口查看', 'success')
   } catch (e) {
     const msg = e instanceof Error ? e.message : '转化失败'
@@ -84,25 +86,26 @@ async function handleSeedance(lang: 'zh' | 'en') {
       class="h-7 px-2 text-xs"
       :loading="seedanceZhLoading"
       :disabled="seedanceZhLoading || seedanceEnLoading"
-      title="将脚本转换为 Seedance 2.0 视频生成平台的提示词格式（中文）"
-      aria-label="转为视频提示词（中文）"
+      title="将脚本转换为 Seedance 2.0 视频生成平台的提示词格式"
+      aria-label="转为Seedance提示词"
       @click="handleSeedance('zh')"
     >
       <Languages :size="12" />
-      转为视频提示词（中文）
+      转为Seedance提示词
     </BaseButton>
     <BaseButton
+      v-if="seedanceZhDone"
       variant="ghost"
       size="sm"
       class="h-7 px-2 text-xs"
       :loading="seedanceEnLoading"
       :disabled="seedanceZhLoading || seedanceEnLoading"
-      title="将脚本转换为 Seedance 2.0 视频生成平台的提示词格式（英文）"
-      aria-label="转为视频提示词（英文）"
+      title="Convert script to Seedance 2.0 prompt in English"
+      aria-label="Seedance Prompt (EN)"
       @click="handleSeedance('en')"
     >
       <Languages :size="12" />
-      转为视频提示词（英文）
+      Seedance Prompt (EN)
     </BaseButton>
     <BaseButton
       variant="ghost"
