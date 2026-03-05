@@ -2,10 +2,12 @@
 import { computed } from 'vue'
 import BaseButton from '@/components/ui/base-button.vue'
 import TemplateCard from '@/components/business/templates/template-card.vue'
-import { Clapperboard, Sparkles, Video, ArrowDown, LayoutGrid } from 'lucide-vue-next'
+import { Clapperboard, Sparkles, Video, ArrowDown, LayoutGrid, Zap, ChevronRight } from 'lucide-vue-next'
 import { useSettingsStore } from '@/stores/settings-store'
 import { useGameStore } from '@/stores/game-store'
 import { useTemplateStore } from '@/stores/template-store'
+import { useConfigStore } from '@/stores/config-store'
+import { useSmartConfig } from '@/composables/use-smart-config'
 import type { ScriptTemplate, UserTemplate } from '@/models/types'
 
 const emit = defineEmits<{
@@ -18,6 +20,8 @@ const emit = defineEmits<{
 const settingsStore = useSettingsStore()
 const gameStore = useGameStore()
 const templateStore = useTemplateStore()
+const configStore = useConfigStore()
+const { getSmartConfig, getPresetKeys } = useSmartConfig()
 
 const hasApiKey = computed(() => settingsStore.hasApiKey)
 const hasGame = computed(() => gameStore.hasGames)
@@ -25,6 +29,17 @@ const hasGame = computed(() => gameStore.hasGames)
 const showNoKey = computed(() => !hasApiKey.value)
 const showNoGame = computed(() => hasApiKey.value && !hasGame.value)
 const showReady = computed(() => hasApiKey.value && hasGame.value)
+
+function startQuickFlow(gameType: string) {
+  const preset = getSmartConfig(gameType)
+  if (preset) {
+    configStore.updateConfig(preset as Partial<import('@/models/types').GenerationConfig>)
+  }
+}
+
+const displayTemplates = computed(() => {
+  return templateStore.quickStartTemplates.slice(0, 6)
+})
 </script>
 
 <template>
@@ -100,10 +115,39 @@ const showReady = computed(() => hasApiKey.value && hasGame.value)
         一切就绪，开始创作
       </h3>
 
-      <!-- Quick Start Templates -->
+      <!-- Quick Start: 3-step guide -->
+      <div class="flex w-full flex-col gap-3 rounded-xl border border-brand/20 bg-brand/5 p-4">
+        <div class="flex items-center gap-2">
+          <Zap :size="16" class="text-brand" />
+          <span class="text-sm font-semibold">快速开始</span>
+        </div>
+        <div class="flex items-center gap-2 text-xs text-muted-foreground">
+          <span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-brand text-[10px] font-bold text-white">1</span>
+          <span>选择游戏品类</span>
+          <ChevronRight :size="12" class="text-muted-foreground/40" />
+          <span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-brand/20 text-[10px] font-bold text-brand">2</span>
+          <span>自动配置参数</span>
+          <ChevronRight :size="12" class="text-muted-foreground/40" />
+          <span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-brand/20 text-[10px] font-bold text-brand">3</span>
+          <span>一键生成</span>
+        </div>
+        <div class="flex flex-wrap gap-1.5 mt-1">
+          <button
+            v-for="key in getPresetKeys()"
+            :key="key"
+            type="button"
+            class="rounded-full border border-border bg-background px-3 py-1 text-xs font-medium hover:border-brand/40 hover:bg-brand/5 transition-colors"
+            @click="startQuickFlow(key)"
+          >
+            {{ key }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Templates -->
       <div class="flex w-full flex-col gap-2.5">
         <div class="flex items-center justify-between">
-          <span class="text-xs font-medium text-muted-foreground">快速开始</span>
+          <span class="text-xs font-medium text-muted-foreground">推荐模板</span>
           <button
             type="button"
             class="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-brand transition-colors"
@@ -115,7 +159,7 @@ const showReady = computed(() => hasApiKey.value && hasGame.value)
         </div>
         <div class="grid grid-cols-2 gap-2">
           <TemplateCard
-            v-for="tpl in templateStore.quickStartTemplates"
+            v-for="tpl in displayTemplates"
             :key="tpl.id"
             :template="tpl"
             compact
