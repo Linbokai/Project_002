@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { ChevronDown, Info, LayoutGrid, Save } from 'lucide-vue-next'
+import { ChevronDown, Info, LayoutGrid, Save, Sparkles } from 'lucide-vue-next'
 import BaseButton from '@/components/ui/base-button.vue'
 import BaseSelect from '@/components/ui/base-select.vue'
 import BaseInput from '@/components/ui/base-input.vue'
@@ -21,11 +21,13 @@ import { useConfigStore } from '@/stores/config-store'
 import { useGameStore } from '@/stores/game-store'
 import { useThemeRadarStore } from '@/stores/theme-radar-store'
 import { useGameplayRadarStore } from '@/stores/gameplay-radar-store'
+import { useSmartConfig } from '@/composables/use-smart-config'
 import { ProductionDirection, UeContentType, ScriptType, ScriptCategory, AudienceType, AspectRatio } from '@/models/enums'
 import { SCRIPT_TYPES, SCRIPT_CATEGORIES } from '@/constants/script-types'
 import { AUDIENCE_PROFILES } from '@/constants/audience-profiles'
 import { SELL_TAG_GROUPS } from '@/constants/sell-tags'
 import type { AdPlatform } from '@/constants/ad-platforms'
+import type { GenerationConfig } from '@/models/types'
 
 defineProps<{
   collapsed?: boolean
@@ -40,8 +42,19 @@ const configStore = useConfigStore()
 const gameStore = useGameStore()
 const themeRadarStore = useThemeRadarStore()
 const gameplayRadarStore = useGameplayRadarStore()
+const { getSmartConfig, getPresetKeys } = useSmartConfig()
 
 const isUeDirection = computed(() => configStore.config.direction === ProductionDirection.UeGameplay)
+
+const smartConfigOpen = ref(false)
+
+function applySmartConfig(gameType: string) {
+  const preset = getSmartConfig(gameType)
+  if (preset) {
+    configStore.updateConfig(preset as Partial<GenerationConfig>)
+  }
+  smartConfigOpen.value = false
+}
 
 function applyPlatformRecommendation(platform: AdPlatform) {
   configStore.setPlatform(platform.id)
@@ -53,7 +66,7 @@ function applyPlatformRecommendation(platform: AdPlatform) {
   if (platform.recommendedDuration.length) {
     patch.duration = platform.recommendedDuration[0]
   }
-  configStore.updateConfig(patch as Partial<import('@/models/types').GenerationConfig>)
+  configStore.updateConfig(patch as Partial<GenerationConfig>)
 }
 
 const gameOptions = computed(() => {
@@ -120,7 +133,7 @@ const radarSelectedCount = computed(() =>
 
 const sectionOpen = ref({
   basic: true,
-  radar: true,
+  radar: false,
   sellTags: false,
   advanced: false,
 })
@@ -145,6 +158,17 @@ const aspectRatioItems: { value: AspectRatio; label: string }[] = [
 const durationItems = [5, 10, 15, 30, 60]
 
 const sellTagCount = computed(() => configStore.config.selectedSellTags.length)
+
+const RATIO_LABELS: Record<string, string> = { '9:16': '竖屏', '16:9': '横屏', '1:1': '方屏' }
+
+const basicSummary = computed(() => {
+  const dir = isUeDirection.value ? 'UE创意' : '2D脚本'
+  const game = gameStore.games.find((g) => g.id === configStore.config.gameId)?.name
+  const dur = `${configStore.config.duration}s`
+  const ratio = RATIO_LABELS[configStore.config.aspectRatio] ?? configStore.config.aspectRatio
+  const parts = [dir, game, dur, ratio].filter(Boolean)
+  return parts.join(' · ')
+})
 
 const configProgress = computed(() => {
   const checks = [
@@ -195,11 +219,42 @@ const configProgress = computed(() => {
 
       <!-- ==================== Progress Indicator ==================== -->
       <div class="border-b border-border px-4 py-2.5">
-        <div class="flex items-center justify-between mb-1.5">
-          <span class="text-[11px] text-muted-foreground">配置完成度</span>
-          <span class="text-[11px] font-medium" :class="configProgress.percent === 100 ? 'text-brand' : 'text-muted-foreground'">
-            {{ configProgress.done }}/{{ configProgress.total }}
-          </span>
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-2">
+            <span class="text-[11px] text-muted-foreground">配置完成度</span>
+            <span
+              class="text-[11px] font-bold px-1.5 py-0.5 rounded-full"
+              :class="configProgress.percent === 100 ? 'bg-brand/15 text-brand' : configProgress.done === 0 ? 'bg-amber-500/15 text-amber-500' : 'bg-muted text-muted-foreground'"
+            >
+              {{ configProgress.done }}/{{ configProgress.total }}
+            </span>
+          </div>
+          <div class="relative">
+            <button
+              type="button"
+              class="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium text-brand bg-brand/10 hover:bg-brand/20 transition-colors"
+              @click="smartConfigOpen = !smartConfigOpen"
+            >
+              <Sparkles :size="12" />
+              智能配置
+            </button>
+            <Transition name="dropdown">
+              <div
+                v-if="smartConfigOpen"
+                class="absolute right-0 top-full z-20 mt-1 w-36 rounded-lg border border-border bg-card p-1 shadow-lg"
+              >
+                <button
+                  v-for="key in getPresetKeys()"
+                  :key="key"
+                  type="button"
+                  class="w-full rounded-md px-2.5 py-1.5 text-left text-xs text-foreground hover:bg-muted transition-colors"
+                  @click="applySmartConfig(key)"
+                >
+                  {{ key }}
+                </button>
+              </div>
+            </Transition>
+          </div>
         </div>
         <div class="flex gap-1">
           <div
@@ -208,12 +263,12 @@ const configProgress = computed(() => {
             class="flex-1"
           >
             <div
-              class="h-1 rounded-full transition-colors duration-300"
-              :class="item.done ? 'bg-brand' : 'bg-muted-foreground/15'"
+              class="h-1.5 rounded-full transition-colors duration-300"
+              :class="item.done ? 'bg-brand' : configProgress.done === 0 ? 'bg-amber-500/20' : 'bg-muted-foreground/15'"
             />
             <span
               class="mt-0.5 block text-center text-[10px] transition-colors"
-              :class="item.done ? 'text-brand' : 'text-muted-foreground/50'"
+              :class="item.done ? 'text-brand font-medium' : 'text-muted-foreground/50'"
             >
               {{ item.label }}
             </span>
@@ -234,6 +289,9 @@ const configProgress = computed(() => {
             :class="{ '-rotate-90': !sectionOpen.basic }"
           />
           <span class="text-sm font-semibold">基础配置</span>
+          <span v-if="!sectionOpen.basic && basicSummary" class="ml-auto mr-1 max-w-[180px] truncate text-[11px] text-muted-foreground">
+            {{ basicSummary }}
+          </span>
         </button>
 
         <div
@@ -578,8 +636,13 @@ const configProgress = computed(() => {
             <Info :size="12" class="text-muted-foreground/60" />
             <span class="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded-md bg-popover px-2 py-1 text-[11px] text-popover-foreground shadow-md opacity-0 transition-opacity group-hover:opacity-100">选择游戏的核心卖点，让脚本差异化更强</span>
           </span>
-          <BaseBadge v-if="sellTagCount > 0" variant="brand" class="ml-auto">
-            已选 {{ sellTagCount }}
+          <template v-if="!sectionOpen.sellTags && sellTagCount > 0">
+            <span class="ml-auto mr-1 max-w-[140px] truncate text-[11px] text-muted-foreground">
+              {{ configStore.config.selectedSellTags.slice(0, 3).join('、') }}{{ sellTagCount > 3 ? '…' : '' }}
+            </span>
+          </template>
+          <BaseBadge v-if="sellTagCount > 0" variant="brand" :class="sectionOpen.sellTags ? 'ml-auto' : ''">
+            {{ sellTagCount }}
           </BaseBadge>
         </button>
 
@@ -729,3 +792,15 @@ const configProgress = computed(() => {
     </div>
   </aside>
 </template>
+
+<style scoped>
+.dropdown-enter-active,
+.dropdown-leave-active {
+  transition: opacity 0.12s ease, transform 0.12s ease;
+}
+.dropdown-enter-from,
+.dropdown-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+</style>
