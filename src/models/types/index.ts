@@ -34,10 +34,12 @@ export type {
 } from './model-routing'
 export type {
   TemplateCategory,
+  GameCategory,
   TemplateConfig,
   ScriptTemplate,
   UserTemplate,
 } from './template'
+export { GAME_CATEGORY_LABELS } from './template'
 export type {
   ScriptVariant,
   VariantCount,
