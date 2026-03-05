@@ -4,6 +4,9 @@ import { ChevronDown, ChevronRight, Loader2, Pencil, X, Upload, User, Palette } 
 import { parseFrames } from '@/services/helpers/frame-parser'
 import { useImageStore } from '@/stores/image-store'
 import BaseButton from '@/components/ui/base-button.vue'
+import ScriptViewSwitcher from './script-view-switcher.vue'
+import ScriptTableView from './script-table-view.vue'
+import ScriptTimelineView from './script-timeline-view.vue'
 import type { ReferenceImage, ReferenceImageType } from '@/models/types'
 
 const props = defineProps<{
@@ -76,6 +79,8 @@ function saveContext() {
 function cancelEditContext() {
   contextEditing.value = false
 }
+
+const activeView = ref<'cards' | 'table' | 'timeline'>('cards')
 
 const fieldLabels: Record<string, string> = {
   textOverlay: '字幕',
@@ -259,7 +264,20 @@ const fieldLabels: Record<string, string> = {
       </div>
     </div>
 
-    <!-- 分镜列表 -->
+    <!-- 视图切换 -->
+    <div class="flex items-center justify-between mb-1">
+      <span class="text-[11px] text-muted-foreground">分镜 ({{ shots.length }})</span>
+      <ScriptViewSwitcher v-model:active-view="activeView" />
+    </div>
+
+    <!-- 表格视图 -->
+    <ScriptTableView v-if="activeView === 'table'" :shots="shots" />
+
+    <!-- 时间轴视图 -->
+    <ScriptTimelineView v-if="activeView === 'timeline'" :shots="shots" />
+
+    <!-- 卡片视图（默认） -->
+    <template v-if="activeView === 'cards'">
     <div
       v-for="shot in shots"
       :key="shot.id"
@@ -307,6 +325,7 @@ const fieldLabels: Record<string, string> = {
         </div>
       </template>
     </div>
+    </template>
 
   </div>
 </template>

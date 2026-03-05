@@ -1,17 +1,23 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import BaseButton from '@/components/ui/base-button.vue'
-import { Clapperboard, Sparkles, Video, ArrowDown } from 'lucide-vue-next'
+import TemplateCard from '@/components/business/templates/template-card.vue'
+import { Clapperboard, Sparkles, Video, ArrowDown, LayoutGrid } from 'lucide-vue-next'
 import { useSettingsStore } from '@/stores/settings-store'
 import { useGameStore } from '@/stores/game-store'
+import { useTemplateStore } from '@/stores/template-store'
+import type { ScriptTemplate, UserTemplate } from '@/models/types'
 
 const emit = defineEmits<{
   'open-settings': []
   'open-game-manager': []
+  'apply-template': [template: ScriptTemplate | UserTemplate]
+  'open-templates': []
 }>()
 
 const settingsStore = useSettingsStore()
 const gameStore = useGameStore()
+const templateStore = useTemplateStore()
 
 const hasApiKey = computed(() => settingsStore.hasApiKey)
 const hasGame = computed(() => gameStore.hasGames)
@@ -83,7 +89,7 @@ const showReady = computed(() => hasApiKey.value && hasGame.value)
     <!-- Scene C: ready -->
     <div
       v-else-if="showReady"
-      class="flex max-w-md flex-col items-center gap-6"
+      class="flex max-w-lg flex-col items-center gap-6"
     >
       <Clapperboard
         :size="48"
@@ -93,6 +99,31 @@ const showReady = computed(() => hasApiKey.value && hasGame.value)
       <h3 class="text-lg font-semibold leading-none tracking-tight">
         一切就绪，开始创作
       </h3>
+
+      <!-- Quick Start Templates -->
+      <div class="flex w-full flex-col gap-2.5">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-medium text-muted-foreground">快速开始</span>
+          <button
+            type="button"
+            class="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-brand transition-colors"
+            @click="emit('open-templates')"
+          >
+            <LayoutGrid :size="12" />
+            全部模板
+          </button>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <TemplateCard
+            v-for="tpl in templateStore.quickStartTemplates"
+            :key="tpl.id"
+            :template="tpl"
+            compact
+            @apply="emit('apply-template', tpl)"
+          />
+        </div>
+      </div>
+
       <div class="flex w-full flex-col gap-3">
         <div class="flex items-start gap-3 rounded-lg border bg-muted/30 p-4 text-left">
           <Sparkles :size="18" class="mt-0.5 shrink-0 text-brand" />

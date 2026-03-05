@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
+import { ChevronDown } from 'lucide-vue-next'
 import { useConfigStore } from '@/stores/config-store'
 import { PRESET_THEMES } from '@/constants/preset-themes'
-import ThemeCard from './theme-card.vue'
 import type { PresetTheme } from '@/models/types'
 
 const props = defineProps<{
@@ -10,6 +10,8 @@ const props = defineProps<{
 }>()
 
 const configStore = useConfigStore()
+
+const expanded = ref(props.tier === 'T1')
 
 const filteredThemes = computed(() =>
   (PRESET_THEMES as PresetTheme[]).filter((t) => t.tier === props.tier),
@@ -31,18 +33,54 @@ function toggleTheme(id: string) {
 </script>
 
 <template>
-  <div class="space-y-3">
-    <h3 class="text-sm font-medium text-muted-foreground">
-      {{ tierLabels[tier] }}
-    </h3>
-    <div class="grid gap-2">
-      <ThemeCard
+  <div>
+    <button
+      type="button"
+      class="flex w-full items-center gap-1.5 py-1 text-left"
+      @click="expanded = !expanded"
+    >
+      <ChevronDown
+        :size="14"
+        class="shrink-0 text-muted-foreground transition-transform"
+        :class="{ '-rotate-90': !expanded }"
+      />
+      <span class="text-xs font-medium text-muted-foreground">
+        {{ tierLabels[tier] }}
+      </span>
+      <span class="text-[10px] text-muted-foreground/60">
+        ({{ filteredThemes.length }})
+      </span>
+    </button>
+    <div v-show="expanded" class="mt-1.5 flex flex-wrap gap-1.5">
+      <span
         v-for="theme in filteredThemes"
         :key="theme.id"
-        :theme="theme"
-        :selected="isSelected(theme.id)"
-        @toggle="toggleTheme(theme.id)"
-      />
+        class="preset-chip group relative"
+      >
+        <button
+          type="button"
+          :class="[
+            'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium transition-colors',
+            'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
+            isSelected(theme.id)
+              ? 'border border-brand/30 bg-brand/10 text-brand'
+              : 'border border-transparent bg-secondary text-secondary-foreground hover:border-border',
+          ]"
+          @click="toggleTheme(theme.id)"
+        >
+          {{ theme.name }}
+        </button>
+        <div class="pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 -translate-x-1/2 rounded-lg border border-border bg-popover px-3 py-2 text-xs shadow-lg opacity-0 transition-opacity group-hover:opacity-100 w-48">
+          <p class="font-medium text-popover-foreground">{{ theme.name }}</p>
+          <p class="mt-1 text-muted-foreground">{{ theme.description }}</p>
+        </div>
+      </span>
     </div>
   </div>
 </template>
+
+<style scoped>
+.preset-chip:hover {
+  z-index: 10;
+}
+</style>

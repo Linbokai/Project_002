@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { Trash2 } from 'lucide-vue-next'
+import { Trash2, Star } from 'lucide-vue-next'
 import BaseDialog from '@/components/ui/base-dialog.vue'
 import BaseButton from '@/components/ui/base-button.vue'
 import BaseBadge from '@/components/ui/base-badge.vue'
+import HistorySearchBar from './history-search-bar.vue'
 import { useHistoryStore } from '@/stores/history-store'
+import { useHistoryFilter } from '@/composables/use-history-filter'
 import { formatTime } from '@/utils'
 
 const props = defineProps<{
@@ -16,6 +18,7 @@ const emit = defineEmits<{
 }>()
 
 const historyStore = useHistoryStore()
+const { searchQuery, activeFilter, filteredSessions, gameNames, toggleFavorite, isFavorited, stats } = useHistoryFilter()
 
 function handleLoadSession(id: string) {
   emit('load-session', id)
@@ -43,20 +46,29 @@ function truncate(text: string, maxLen: number) {
       <div class="flex items-center gap-2">
         <h2 class="text-lg font-semibold">历史记录</h2>
         <BaseBadge v-if="historyStore.sessions.length" variant="secondary">
-          {{ historyStore.sessions.length }}
+          {{ stats.total }}
+        </BaseBadge>
+        <BaseBadge v-if="stats.favorited > 0" variant="brand" class="ml-auto">
+          <Star :size="10" class="mr-0.5" /> {{ stats.favorited }}
         </BaseBadge>
       </div>
     </template>
 
-    <div class="flex flex-col gap-2">
+    <HistorySearchBar
+      v-model:search-query="searchQuery"
+      v-model:filter="activeFilter"
+      :game-names="gameNames"
+    />
+
+    <div class="flex flex-col gap-2 max-h-[50vh] overflow-y-auto">
       <div
-        v-if="!historyStore.sessions.length"
+        v-if="!filteredSessions.length"
         class="py-12 text-center text-sm text-muted-foreground"
       >
-        暂无历史记录
+        {{ historyStore.sessions.length ? '没有匹配的记录' : '暂无历史记录' }}
       </div>
       <div
-        v-for="session in historyStore.sessions"
+        v-for="session in filteredSessions"
         :key="session.id"
         class="group flex cursor-pointer flex-col gap-1.5 rounded-lg border p-3 transition-colors hover:bg-muted/50"
         @click="handleLoadSession(session.id)"
@@ -71,7 +83,16 @@ function truncate(text: string, maxLen: number) {
           </BaseBadge>
           <span v-if="session.themes" class="truncate">{{ session.themes }}</span>
         </div>
-        <div class="mt-1 flex justify-end opacity-0 transition-opacity group-hover:opacity-100">
+        <div class="mt-1 flex justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+          <BaseButton
+            variant="ghost"
+            size="icon"
+            :class="isFavorited(session.id) ? 'text-brand' : 'text-muted-foreground hover:text-brand'"
+            title="收藏"
+            @click.stop="toggleFavorite(session.id)"
+          >
+            <Star :size="14" :fill="isFavorited(session.id) ? 'currentColor' : 'none'" />
+          </BaseButton>
           <BaseButton
             variant="ghost"
             size="icon"

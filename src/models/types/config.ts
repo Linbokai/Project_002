@@ -6,6 +6,7 @@ import type {
   ProductionDirection,
   UeContentType,
 } from '@/models/enums'
+import type { RoutingMode, RoutingProfile } from './model-routing'
 
 export interface HeroConfig {
   mode: 'game' | 'trending' | 'custom'
@@ -41,6 +42,8 @@ export interface ApiConfig {
   genModel: string
   visionModel: string
   imageModel: string
+  routingMode: RoutingMode
+  routingProfile: RoutingProfile
 }
 
 export interface KeyInfo {

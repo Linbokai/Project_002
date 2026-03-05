@@ -1,9 +1,10 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import type { GenerationConfig } from '@/models/types'
 import { VideoDuration, AspectRatio, ScriptType, AudienceType, ProductionDirection, UeContentType } from '@/models/enums'
 import { STORAGE_KEYS } from '@/constants'
 import { getItem, setItem } from '@/utils'
+import { AD_PLATFORMS } from '@/constants/ad-platforms'
 
 function defaultConfig(): GenerationConfig {
   return {
@@ -64,10 +65,23 @@ export const useConfigStore = defineStore('config', () => {
     setItem(STORAGE_KEYS.GENERATION_CONFIG, config.value)
   }
 
+  const platformId = ref<string>(getItem<string>('sg_platform', 'general'))
+
+  function setPlatform(id: string) {
+    platformId.value = id
+    setItem('sg_platform', id)
+  }
+
+  const platformPromptHint = computed(() => {
+    const p = AD_PLATFORMS.find((pl) => pl.id === platformId.value)
+    return p?.promptHint ?? ''
+  })
+
   function resetConfig() {
     config.value = defaultConfig()
     setItem(STORAGE_KEYS.GENERATION_CONFIG, config.value)
+    setPlatform('general')
   }
 
-  return { config, updateConfig, toggleSellTag, toggleTheme, toggleGameplay, resetConfig }
+  return { config, updateConfig, toggleSellTag, toggleTheme, toggleGameplay, resetConfig, platformId, setPlatform, platformPromptHint }
 })

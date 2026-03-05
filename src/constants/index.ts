@@ -10,6 +10,8 @@ export const STORAGE_KEYS = {
   GENERATION_CONFIG: 'sg_gen_cfg',
   SAFE_MODE: 'sg_safe_mode',
   PROMPT_OVERRIDES: 'sg_prompt_overrides',
+  USER_TEMPLATES: 'sg_user_templates',
+  ONBOARDING_DONE: 'sg_onboarding_done',
 } as const
 
 export const HISTORY_MAX = 30
@@ -27,6 +29,8 @@ export const API_DEFAULTS = {
   GEN_MODEL: 'deepseek/deepseek-v3.2',
   VISION_MODEL: 'qwen/qwen3.5-35b-a3b',
   IMAGE_MODEL: 'google/gemini-3.1-flash-image-preview',
+  ROUTING_MODE: 'manual' as const,
+  ROUTING_PROFILE: 'balanced' as const,
   TEMPERATURE: 0.85,
   MAX_TOKENS: 4096,
   MAX_TOKENS_VISION: 8192,

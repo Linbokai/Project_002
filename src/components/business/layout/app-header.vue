@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { History, Key, Gamepad2, RefreshCw, SquarePen } from 'lucide-vue-next'
+import { History, Key, Gamepad2, RefreshCw, SquarePen, Menu } from 'lucide-vue-next'
 import { APP_NAME } from '@/constants'
 import { useSettingsStore } from '@/stores/settings-store'
 import { useBalance } from '@/composables/use-balance'
@@ -12,6 +12,7 @@ const emit = defineEmits<{
   'open-api-settings': []
   'open-game-manager': []
   'new-session': []
+  'toggle-panel': []
 }>()
 
 const settingsStore = useSettingsStore()
@@ -73,6 +74,16 @@ const balanceValueClass = computed(() => {
   <header
     class="flex h-12 shrink-0 items-center gap-3 border-b border-border bg-background/80 px-4 backdrop-blur-xl"
   >
+    <BaseButton
+      variant="ghost"
+      size="icon"
+      class="shrink-0 md:hidden"
+      title="配置面板"
+      aria-label="配置面板"
+      @click="emit('toggle-panel')"
+    >
+      <Menu :size="16" />
+    </BaseButton>
     <span class="shrink-0 text-sm font-semibold">{{ APP_NAME }}</span>
     <div class="flex-1" />
     <div class="flex shrink-0 items-center gap-1">
