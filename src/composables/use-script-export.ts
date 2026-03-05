@@ -1,6 +1,7 @@
 import { unref } from 'vue'
 import { copyToClipboard, downloadText } from '@/utils'
 import { buildSeedancePrompt } from '@/services/helpers/script-prompt-builder'
+import { formatAsHtml, formatAsPlainText } from '@/services/helpers/export-formatter'
 import { chatCompletion } from '@/services/api/openrouter-api'
 import { useSettingsStore } from '@/stores/settings-store'
 import { useChatStore } from '@/stores/chat-store'
@@ -10,6 +11,15 @@ function formatExportFilename(gameName: string): string {
   const safe = (gameName || '脚本').replace(/[<>:"/\\|?*]/g, '_')
   const date = new Date().toISOString().slice(0, 10)
   return `${safe}_${date}.txt`
+}
+
+function downloadBlob(blob: Blob, filename: string): void {
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(url)
 }
 
 export function useScriptExport() {
@@ -63,9 +73,23 @@ export function useScriptExport() {
     }
   }
 
+  function downloadHtml(script: string, filename?: string): void {
+    const html = formatAsHtml(script, filename)
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' })
+    downloadBlob(blob, (filename ?? 'script') + '.html')
+  }
+
+  function downloadTxt(script: string, filename?: string): void {
+    const txt = formatAsPlainText(script)
+    const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' })
+    downloadBlob(blob, (filename ?? 'script') + '.txt')
+  }
+
   return {
     copyScript,
     downloadScript,
+    downloadHtml,
+    downloadTxt,
     convertToSeedance,
   }
 }

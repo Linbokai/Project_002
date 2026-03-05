@@ -4,11 +4,13 @@ import type { VideoMetrics } from '@/models/types'
 import BaseButton from '@/components/ui/base-button.vue'
 import BaseSelect from '@/components/ui/base-select.vue'
 import VideoMetricsDialog from './video-metrics-dialog.vue'
-import { Send, Sparkles, Video, Settings2, ChevronUp } from 'lucide-vue-next'
+import ViralInputDialog from './viral-input-dialog.vue'
+import { Send, Sparkles, Video, Settings2, ChevronUp, Zap } from 'lucide-vue-next'
 import VariantSelector from './variant-selector.vue'
 import { useChat } from '@/composables/use-chat'
 import { useVariantStore } from '@/stores/variant-store'
 import { useVideoAnalysis } from '@/composables/use-video-analysis'
+import { useViralGeneration } from '@/composables/use-viral-generation'
 import { useModelStatus } from '@/composables/use-model-status'
 import { useConfigStore } from '@/stores/config-store'
 import { useGameStore } from '@/stores/game-store'
@@ -19,6 +21,7 @@ import { SEARCH_MODELS, GEN_MODELS, VISION_MODELS } from '@/constants/model-opti
 
 const { sendMessage, generateScript, isGenerating } = useChat()
 const { analyzeVideo, analyzing, progress } = useVideoAnalysis()
+const { viralDialogOpen, generateViral } = useViralGeneration()
 const { searchStatus, genStatus, visionStatus } = useModelStatus()
 const variantStore = useVariantStore()
 const configStore = useConfigStore()
@@ -74,6 +77,24 @@ async function handleGenerate() {
 function openVideoDialog() {
   if (busy.value) return
   showVideoDialog.value = true
+}
+
+function openViralDialog() {
+  if (busy.value) return
+  viralDialogOpen.value = true
+}
+
+function closeViralDialog() {
+  viralDialogOpen.value = false
+}
+
+async function handleViralSubmit(
+  script: string,
+  direction: import('@/services/helpers/viral-prompt-builder').ViralDirection,
+  count: number
+) {
+  closeViralDialog()
+  await generateViral(script, direction, count)
 }
 
 async function handleVideoSubmit(file: File, metrics?: VideoMetrics) {
@@ -217,6 +238,16 @@ async function handleVideoSubmit(file: File, metrics?: VideoMetrics) {
           <Video v-if="!analyzing" :size="14" />
           分析视频
         </BaseButton>
+        <BaseButton
+          variant="outline"
+          size="sm"
+          :disabled="busy"
+          title="基于爆款脚本一键裂变多个变体"
+          @click="openViralDialog"
+        >
+          <Zap :size="14" />
+          爆款裂变
+        </BaseButton>
       </div>
     </div>
 
@@ -224,6 +255,11 @@ async function handleVideoSubmit(file: File, metrics?: VideoMetrics) {
       :open="showVideoDialog"
       @close="showVideoDialog = false"
       @submit="handleVideoSubmit"
+    />
+    <ViralInputDialog
+      :open="viralDialogOpen"
+      @close="closeViralDialog"
+      @submit="handleViralSubmit"
     />
   </div>
 </template>

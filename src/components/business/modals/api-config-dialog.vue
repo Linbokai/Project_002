@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
+import { Sparkles } from 'lucide-vue-next'
 import BaseDialog from '@/components/ui/base-dialog.vue'
 import BaseButton from '@/components/ui/base-button.vue'
 import BaseInput from '@/components/ui/base-input.vue'
@@ -189,6 +190,32 @@ function handleSave() {
     </template>
 
     <div class="flex flex-col gap-4">
+      <!-- Trial Mode Banner -->
+      <div
+        v-if="!settingsStore.hasApiKey"
+        class="mb-4 rounded-lg border border-brand/20 bg-brand/5 p-3"
+      >
+        <div class="mb-1 flex items-center gap-2">
+          <Sparkles :size="14" class="text-brand" />
+          <span class="text-sm font-medium">免费体验模式</span>
+        </div>
+        <p class="mb-2 text-xs text-muted-foreground">
+          无需 API Key，可免费体验 {{ settingsStore.trialRemaining }} 次脚本生成
+        </p>
+        <button
+          v-if="!settingsStore.isTrialMode"
+          type="button"
+          class="rounded-md bg-brand px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-brand/90"
+          @click="settingsStore.enableTrialMode()"
+        >
+          开启免费体验
+        </button>
+        <div v-else class="flex items-center gap-2 text-xs">
+          <span class="font-medium text-brand">已开启</span>
+          <span class="text-muted-foreground">· 剩余 {{ settingsStore.trialRemaining }} 次</span>
+        </div>
+      </div>
+
       <div class="flex flex-col gap-2">
         <label class="text-sm font-medium">AI 接口密钥</label>
         <BaseInput v-model="apiKey" type="password" placeholder="请输入从 OpenRouter 获取的 API Key" />

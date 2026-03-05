@@ -11,6 +11,8 @@ export interface Shot {
   transition?: string
   sfx?: string
   notes?: string
+  stylePreset?: 'realistic' | 'anime' | 'pixel' | 'cyberpunk' | 'ink'
+  sortOrder?: number
 }
 
 export interface ParsedScript {

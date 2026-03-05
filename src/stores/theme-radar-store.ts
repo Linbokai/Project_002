@@ -1,13 +1,19 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { ThemeTopic, CustomTheme } from '@/models/types'
+import type { ThemeTopic, CustomTheme, PresetTheme } from '@/models/types'
 import { SearchPlatform } from '@/models/enums'
+import { PRESET_THEMES } from '@/constants/preset-themes'
 
 export const useThemeRadarStore = defineStore('themeRadar', () => {
   const platform = ref<SearchPlatform>(SearchPlatform.All)
   const searchResults = ref<ThemeTopic[]>([])
   const customThemes = ref<CustomTheme[]>([])
   const searching = ref(false)
+  const presetThemes = computed(() => PRESET_THEMES as PresetTheme[])
+
+  const sortedByTrend = computed(() =>
+    [...presetThemes.value].sort((a, b) => (b.trendScore ?? 0) - (a.trendScore ?? 0)),
+  )
 
   const selectedSearchResults = computed(() =>
     searchResults.value.filter((t) => t.selected),
@@ -66,6 +72,8 @@ export const useThemeRadarStore = defineStore('themeRadar', () => {
     platform,
     searchResults,
     customThemes,
+    presetThemes,
+    sortedByTrend,
     searching,
     selectedSearchResults,
     selectedCustomThemes,

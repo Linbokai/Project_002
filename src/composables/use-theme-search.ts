@@ -1,11 +1,14 @@
 import { computed, unref } from 'vue'
 import { useThemeRadarStore } from '@/stores/theme-radar-store'
 import { useSettingsStore } from '@/stores/settings-store'
-import { chatCompletion } from '@/services/api/openrouter-api'
+import { useChatStore } from '@/stores/chat-store'
+import { chatCompletion, streamChat } from '@/services/api/openrouter-api'
 import type { ThemeTopic } from '@/models/types'
 import { SearchPlatform } from '@/models/enums'
+import { MessageType } from '@/models/enums'
 import { generateId } from '@/utils'
 import { parseJsonArray, safeParseJsonArray } from '@/utils/json-parser'
+import { useToast } from '@/composables/use-toast'
 
 const PLATFORM_LABELS: Record<SearchPlatform, string> = {
   [SearchPlatform.Douyin]: '抖音',
@@ -34,6 +37,15 @@ const SEARCH_PROMPT_TEMPLATE = `你是一位资深的短视频买量创意策划
 只输出纯 JSON，不要任何其他说明文字。格式示例：
 [{"name":"丧尸末日","desc":"末日求生压迫感+视觉冲击，完播率极高","tag":"恐怖向","heat":"爆","hooks":["开局被丧尸包围，只剩最后一颗子弹","你能在丧尸城市活过3天吗"],"cases":["某SLG丧尸围城素材单日消耗50w+"]}]`
 
+const WEEKLY_REPORT_PROMPT = `请搜索并汇总本周游戏买量领域的热门主题趋势，生成一份热点周报。
+要求：
+- 覆盖抖音、快手、B站等主流投放平台
+- 列出 8~15 个本周表现突出的买量题材/类型
+- 每个题材说明：为什么火、代表案例、适合的游戏类型
+- 按热度从高到低排列
+- 给出简洁实用的投放建议
+请用 Markdown 格式输出，结构清晰，便于阅读。`
+
 function buildSearchPrompt(platform: SearchPlatform): string {
   const platformLabel = PLATFORM_LABELS[platform]
   return SEARCH_PROMPT_TEMPLATE.replace('{platform}', platformLabel)
@@ -59,6 +71,8 @@ function parseToThemeTopics(raw: unknown): ThemeTopic[] {
 export function useThemeSearch() {
   const themeRadarStore = useThemeRadarStore()
   const settingsStore = useSettingsStore()
+  const chatStore = useChatStore()
+  const { showToast } = useToast()
 
   const isSearching = computed(() => unref(themeRadarStore.searching))
 
@@ -98,10 +112,42 @@ export function useThemeSearch() {
     return topics
   }
 
+  async function generateWeeklyReport(): Promise<void> {
+    const config = unref(settingsStore.config)
+    if (!config.openRouterKey) {
+      showToast('请先配置 API Key', 'destructive')
+      throw new Error('请先配置 API Key')
+    }
+
+    const userContent = '请生成本周游戏买量热门主题热点周报'
+    chatStore.addMessage({ role: 'user', content: userContent, timestamp: Date.now() })
+    chatStore.startGeneration(MessageType.General)
+
+    await streamChat(
+      {
+        config,
+        model: settingsStore.getModelForTask('search'),
+        messages: [
+          { role: 'system', content: WEEKLY_REPORT_PROMPT },
+          { role: 'user', content: userContent },
+        ],
+      },
+      {
+        onChunk: (chunk) => chatStore.appendToStream(chunk),
+        onDone: () => chatStore.finishGeneration(),
+        onError: (err) => {
+          chatStore.failGeneration(err)
+          showToast(err, 'destructive')
+        },
+      },
+    )
+  }
+
   return {
     searchHotTopics,
     getPromptForManualMode,
     importManualResult,
+    generateWeeklyReport,
     isSearching,
   }
 }

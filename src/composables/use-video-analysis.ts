@@ -20,6 +20,42 @@ import { MessageType, ProductionDirection } from '@/models/enums'
 import { useToast } from '@/composables/use-toast'
 import { useVideoFrames } from '@/composables/use-video-frames'
 
+export interface AnalysisScore {
+  hookStrength: number
+  rhythm: number
+  sellingPoints: number
+  platformFit: number
+  visualQuality: number
+  overall: number
+}
+
+export function parseAnalysisScore(content: string): AnalysisScore | null {
+  const hookPattern = /(?:钩子强度|hook)[:\s：]*(\d+)\s*\/\s*10/i
+  const rhythmPattern = /(?:节奏把控|节奏|rhythm)[:\s：]*(\d+)\s*\/\s*10/i
+  const sellPattern = /(?:卖点覆盖|卖点|selling)[:\s：]*(\d+)\s*\/\s*10/i
+  const platformPattern = /(?:平台适配|平台|platform)[:\s：]*(\d+)\s*\/\s*10/i
+  const visualPattern = /(?:视觉质量|视觉|visual)[:\s：]*(\d+)\s*\/\s*10/i
+  const overallPattern = /(?:综合评分|综合|overall)[:\s：]*(\d+)\s*\/\s*10/i
+
+  const hook = content.match(hookPattern)
+  const rhythm = content.match(rhythmPattern)
+  const sell = content.match(sellPattern)
+  const platform = content.match(platformPattern)
+  const visual = content.match(visualPattern)
+  const overall = content.match(overallPattern)
+
+  if (!hook || !rhythm || !sell || !platform || !visual || !overall) return null
+
+  return {
+    hookStrength: parseInt(hook[1]!, 10),
+    rhythm: parseInt(rhythm[1]!, 10),
+    sellingPoints: parseInt(sell[1]!, 10),
+    platformFit: parseInt(platform[1]!, 10),
+    visualQuality: parseInt(visual[1]!, 10),
+    overall: parseInt(overall[1]!, 10),
+  }
+}
+
 const analyzing = ref(false)
 const videoFile = ref<File | null>(null)
 const lastMetrics = ref<VideoMetrics | undefined>()

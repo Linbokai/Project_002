@@ -26,7 +26,7 @@ const { gridImage, loading: gridLoading, error: gridError, generateGrid } = useS
 const imageStore = useImageStore()
 const { showToast } = useToast()
 
-const { loading: scoreLoading, score, scoreScript } = useScriptScore()
+const { loading: scoreLoading, score, scoreScript, optimizeScript } = useScriptScore()
 
 const seedanceLoading = ref(false)
 const shotBatchLoading = ref(false)
@@ -37,6 +37,15 @@ async function handleScore() {
   await scoreScript(props.scriptText)
   if (score.value) {
     showToast('脚本评分完成', 'success')
+  }
+}
+
+async function handleOptimize(suggestions: string[]) {
+  await optimizeScript(props.scriptText, suggestions)
+  if (suggestions.length > 1) {
+    showToast('已发起一键优化，请在聊天窗口查看', 'success')
+  } else {
+    showToast('已发起单条优化，请在聊天窗口查看', 'success')
   }
 }
 
@@ -149,7 +158,13 @@ async function handleSeedance() {
     </div>
 
     <!-- 评分卡片 -->
-    <ScoreCard v-if="score || scoreLoading" :score="score" :loading="scoreLoading" />
+    <ScoreCard
+      v-if="score || scoreLoading"
+      :score="score"
+      :loading="scoreLoading"
+      :original-script="scriptText"
+      @optimize="handleOptimize"
+    />
 
     <!-- 九宫格结果预览 -->
     <div v-if="gridImage" class="rounded-md border border-border/40 bg-muted/20 p-2">

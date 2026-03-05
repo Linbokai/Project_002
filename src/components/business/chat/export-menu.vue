@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
-import { Download, Copy, FileText, FileSpreadsheet, FileDown, Check } from 'lucide-vue-next'
+import { Download, Copy, FileText, FileSpreadsheet, FileDown, FileCode, FileType, Check } from 'lucide-vue-next'
 import BaseButton from '@/components/ui/base-button.vue'
 import { parseFrames } from '@/services/helpers/frame-parser'
 import { formatAsMarkdown, formatAsCsv } from '@/services/helpers/export-formatter'
+import { useScriptExport } from '@/composables/use-script-export'
 
 const props = defineProps<{
   scriptText: string
@@ -14,6 +15,7 @@ const emit = defineEmits<{
   exported: []
 }>()
 
+const { downloadHtml, downloadTxt } = useScriptExport()
 const isOpen = ref(false)
 const menuRef = ref<HTMLElement | null>(null)
 const copied = ref(false)
@@ -98,11 +100,27 @@ function handleDownloadCsv() {
   emit('exported')
 }
 
+function handleDownloadHtml() {
+  const name = props.gameName || '脚本'
+  downloadHtml(props.scriptText, `${name}_${dateSuffix()}`)
+  close()
+  emit('exported')
+}
+
+function handleDownloadPlainText() {
+  const name = props.gameName || '脚本'
+  downloadTxt(props.scriptText, `${name}_${dateSuffix()}`)
+  close()
+  emit('exported')
+}
+
 const menuItems = [
   { label: '复制脚本', icon: Copy, action: handleCopy },
   { label: '下载 TXT', icon: FileText, action: handleDownloadTxt },
   { label: '下载 Markdown', icon: FileDown, action: handleDownloadMarkdown },
   { label: '下载 CSV', icon: FileSpreadsheet, action: handleDownloadCsv },
+  { label: '下载 HTML', icon: FileCode, action: handleDownloadHtml },
+  { label: '下载纯文本', icon: FileType, action: handleDownloadPlainText },
 ] as const
 </script>
 
