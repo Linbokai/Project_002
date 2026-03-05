@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import BaseButton from '@/components/ui/base-button.vue'
-import { RefreshCw, Anchor, User } from 'lucide-vue-next'
+import { RefreshCw, Anchor, User, Zap } from 'lucide-vue-next'
 import { useChat } from '@/composables/use-chat'
 
 withDefaults(
@@ -9,6 +9,10 @@ withDefaults(
   }>(),
   { disabled: false }
 )
+
+const emit = defineEmits<{
+  'open-viral': []
+}>()
 
 const { quickAction } = useChat()
 
@@ -59,6 +63,17 @@ function handleHero() {
     >
       <User :size="14" />
       推荐视频主角
+    </BaseButton>
+    <BaseButton
+      variant="ghost"
+      size="sm"
+      :disabled="disabled"
+      title="基于爆款脚本一键裂变多个变体"
+      aria-label="爆款裂变"
+      @click="emit('open-viral')"
+    >
+      <Zap :size="14" />
+      爆款裂变
     </BaseButton>
   </div>
 </template>

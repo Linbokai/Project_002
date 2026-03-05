@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { Clapperboard, Key, Gamepad2, LayoutGrid, ChevronRight, ChevronLeft, X } from 'lucide-vue-next'
+import { Clapperboard, Key, Gamepad2, LayoutGrid, ChevronRight, ChevronLeft, X, Sparkles } from 'lucide-vue-next'
 import BaseButton from '@/components/ui/base-button.vue'
 import BaseDialog from '@/components/ui/base-dialog.vue'
 import TemplateCard from '@/components/business/templates/template-card.vue'
@@ -35,10 +35,11 @@ const steps = computed(() => [
   {
     icon: Key,
     title: '配置 AI 接口',
-    description: '需要一个 OpenRouter API Key 来调用 AI 模型。',
+    description: '需要一个 OpenRouter API Key 来调用 AI 模型，或可先免费体验。',
     action: '配置 API Key',
-    actionDone: settingsStore.hasApiKey,
-    doneText: '已配置',
+    trialAction: '免费体验',
+    actionDone: settingsStore.hasApiKey || settingsStore.canUseTrial,
+    doneText: settingsStore.hasApiKey ? '已配置' : '已开启体验',
   },
   {
     icon: Gamepad2,
@@ -122,9 +123,23 @@ function handleApplyTemplate(tpl: ScriptTemplate | UserTemplate) {
         <div v-if="step.actionDone" class="flex items-center gap-2 rounded-lg bg-brand/8 px-4 py-2 text-sm font-medium text-brand">
           ✓ {{ step.doneText }}
         </div>
-        <BaseButton v-else variant="brand" @click="handleAction">
-          {{ step.action }}
-        </BaseButton>
+        <div v-else class="flex flex-col items-center gap-2">
+          <div class="flex items-center gap-2">
+            <BaseButton variant="brand" @click="handleAction">
+              {{ step.action }}
+            </BaseButton>
+            <BaseButton
+              v-if="currentStep === 1 && step.trialAction && !settingsStore.hasApiKey"
+              variant="outline"
+              size="sm"
+              class="gap-1.5"
+              @click="settingsStore.enableTrialMode()"
+            >
+              <Sparkles :size="14" />
+              {{ step.trialAction }} (剩余 {{ settingsStore.trialRemaining }} 次)
+            </BaseButton>
+          </div>
+        </div>
         <a
           v-if="currentStep === 1"
           href="https://openrouter.ai/keys"

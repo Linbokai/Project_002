@@ -20,7 +20,14 @@ export const useSettingsStore = defineStore('settings', () => {
     }),
   )
 
+  const trialMode = ref(getItem<boolean>('sg_trial_mode', false))
+  const trialUsageCount = ref(getItem<number>('sg_trial_usage', 0))
+  const TRIAL_MAX = 5
+
   const hasApiKey = computed(() => config.value.openRouterKey.length > 0)
+  const isTrialMode = computed(() => trialMode.value)
+  const trialRemaining = computed(() => Math.max(0, TRIAL_MAX - trialUsageCount.value))
+  const canUseTrial = computed(() => trialMode.value && trialRemaining.value > 0)
 
   function updateConfig(partial: Partial<ApiConfig>) {
     config.value = { ...config.value, ...partial }
@@ -51,5 +58,32 @@ export const useSettingsStore = defineStore('settings', () => {
     updateConfig({ [keyMap[task]]: modelId })
   }
 
-  return { config, hasApiKey, updateConfig, getModelForTask, updateModel }
+  function enableTrialMode() {
+    trialMode.value = true
+    setItem('sg_trial_mode', true)
+  }
+
+  function consumeTrial() {
+    trialUsageCount.value++
+    setItem('sg_trial_usage', trialUsageCount.value)
+  }
+
+  function disableTrialMode() {
+    trialMode.value = false
+    setItem('sg_trial_mode', false)
+  }
+
+  return {
+    config,
+    hasApiKey,
+    updateConfig,
+    getModelForTask,
+    updateModel,
+    isTrialMode,
+    trialRemaining,
+    canUseTrial,
+    enableTrialMode,
+    consumeTrial,
+    disableTrialMode,
+  }
 })
