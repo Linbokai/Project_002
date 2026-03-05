@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { ChevronDown, ChevronUp, Copy, Check, Lightbulb, Award } from 'lucide-vue-next'
+import { ChevronDown, ChevronUp, Copy, Check, Lightbulb, Award, Sparkles } from 'lucide-vue-next'
 import BaseBadge from '@/components/ui/base-badge.vue'
 import BaseButton from '@/components/ui/base-button.vue'
 import ScoreRadarChart from './score-radar-chart.vue'
@@ -9,6 +9,11 @@ import type { ScriptScore } from '@/models/types/score'
 const props = defineProps<{
   score: ScriptScore | null
   loading: boolean
+  originalScript?: string
+}>()
+
+defineEmits<{
+  optimize: [suggestions: string[]]
 }>()
 
 const expanded = ref(true)
@@ -112,9 +117,26 @@ async function copyReport() {
             class="flex items-start gap-2 text-sm text-foreground"
           >
             <Lightbulb :size="14" class="mt-0.5 shrink-0 text-brand" />
-            <span class="leading-relaxed">{{ suggestion }}</span>
+            <span class="min-w-0 flex-1 leading-relaxed">{{ suggestion }}</span>
+            <button
+              v-if="originalScript"
+              type="button"
+              class="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium text-brand bg-brand/10 hover:bg-brand/20 transition-colors"
+              @click="$emit('optimize', [suggestion])"
+            >
+              应用
+            </button>
           </li>
         </ul>
+        <button
+          v-if="originalScript && score.suggestions.length > 0"
+          type="button"
+          class="mt-3 w-full rounded-lg border border-brand/30 bg-brand/5 px-3 py-2 text-xs font-medium text-brand hover:bg-brand/10 transition-colors flex items-center justify-center gap-1.5"
+          @click="$emit('optimize', score.suggestions)"
+        >
+          <Sparkles :size="13" />
+          一键全部优化
+        </button>
       </div>
 
       <!-- Copy button -->

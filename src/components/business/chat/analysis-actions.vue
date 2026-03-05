@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import BaseButton from '@/components/ui/base-button.vue'
-import { TrendingUp, MousePointerClick, DollarSign, Play, Sparkles } from 'lucide-vue-next'
+import { TrendingUp, MousePointerClick, DollarSign, Play, Sparkles, GitCompare } from 'lucide-vue-next'
 import { useVideoAnalysis } from '@/composables/use-video-analysis'
 import { useChatStore } from '@/stores/chat-store'
 import { GenerationStatus } from '@/models/enums'
 import { computed } from 'vue'
 
+const emit = defineEmits<{ compare: [] }>()
 const { requestOptimization, generateScriptDirections } = useVideoAnalysis()
 const chatStore = useChatStore()
 
@@ -55,6 +56,17 @@ function handleGenerateScript() {
       >
         <Sparkles :size="12" />
         根据分析生成新脚本
+      </BaseButton>
+      <BaseButton
+        variant="ghost"
+        size="sm"
+        class="h-7 px-2 text-xs"
+        title="上传另一个视频进行对比分析"
+        :disabled="busy"
+        @click="emit('compare')"
+      >
+        <GitCompare :size="14" />
+        对比分析
       </BaseButton>
     </div>
   </div>
