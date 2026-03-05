@@ -1,0 +1,53 @@
+---
+description: 脚本生成格式契约 — 保证 AI 输出格式与前端解析器始终匹配
+alwaysApply: true
+---
+
+# 脚本生成格式契约
+
+修改脚本生成相关文件时（script-types.ts / frame-parser.ts / script-prompt-builder.ts / gameplay-prompt-builder.ts），必须遵守以下契约。
+
+## 契约一：ScriptTypeConfig.format 必须结构化
+
+每个脚本类型的 `format` 字段必须用 `- **字段名**：说明` 逐字段列出，禁止用一句话笼统描述。
+
+```
+// ❌ 禁止
+format: '输出3-5个独立的5秒钩子方案，每个方案2-3个分镜。'
+
+// ✅ 必须
+format: '输出3-5个方案，每个方案用 ### 方案X：[钩子类型] 作为标题...\n每个分镜包含：\n- **景别**：...\n- **画面**：...'
+```
+
+## 契约二：format 中的字段名必须命中 frame-parser.ts 的 FIELD_DEFS
+
+frame-parser 通过以下关键词识别字段（左侧为内部字段名，右侧为可匹配的中文标签）：
+
+| 内部字段 | 可用标签（任选其一即可匹配） |
+|----------|------------------------------|
+| scale | 景别、景 |
+| scene | 画面、场景、视觉 |
+| voiceover | 口播台词、台词、旁白、口播、对白 |
+| textOverlay | 字幕、花字、文字、文案 |
+| camera | 镜头、镜头运动、运镜、机位 |
+| vfx | 特效、特效分层 |
+| transition | 转场 |
+| sfx | 音效、BGM、音乐 |
+| notes | 备注、说明 |
+
+新增字段时必须同步更新 FIELD_DEFS 和 ScriptShotRenderer 的 fieldLabels。
+
+## 契约三：格式硬性禁令必须覆盖所有路径
+
+`buildScriptTypeSection`（2D）和 `buildUeScriptTypeSection`（UE）都必须包含格式硬性禁令：
+- 每个字段独占一行
+- 禁止管道符/竖线/表格/HTML 标签
+- 禁止合并多字段到同一行
+
+## 契约四：多方案格式（Hook5s 等）的解析
+
+当脚本类型输出多个方案时（如 Hook5s），format 必须要求用 `### 方案X` 作为方案分隔标题，frame-parser 必须有对应的 `trySchemeFormat` 解析策略支持 `### 方案` 分割。
+
+## 契约五：修改后自检
+
+任何改动后必须验证：`parseFrames(AI典型输出)` 不会降级到 `fallbackParagraphs`。

@@ -215,13 +215,21 @@ function buildUeScriptTypeSection(config: GenerationConfig): string {
   if (!scriptType) return ''
 
   const lines = [
-    `## 脚本类型：${scriptType.name}`,
+    `## 最高优先级：脚本类型 —「${scriptType.name}」`,
     '',
-    `### 角色要求\n${scriptType.role}`,
+    `> ⚠️ 你必须严格按照「${scriptType.name}」的输出格式和创作规则生成脚本。这是不可违反的硬性约束。`,
     '',
-    `### 输出格式\n${scriptType.format}`,
+    `### 输出格式（必须逐字段输出，禁止合并或省略）`,
+    scriptType.format,
     '',
-    '### 创作规则',
+    '### ⛔ 格式硬性禁令',
+    '- 每个字段必须独占一行，一行只写一个字段',
+    '- 禁止使用 | 管道符/竖线分隔字段',
+    '- 禁止使用 markdown 表格格式',
+    '- 禁止使用 <br> 等 HTML 标签',
+    '- 禁止将多个字段合并到同一行',
+    '',
+    '### 创作规则（必须全部遵守）',
     ...scriptType.rules.map((r) => `- ${r}`),
   ]
 

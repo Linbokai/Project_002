@@ -103,7 +103,7 @@ Phase 4（长期规划）: 独立大功能
 
 ### M1: 爆款裂变功能 `P0` `新模块`
 
-**状态**: 🔴 待开始
+**状态**: 🟢 已完成
 
 **目标**: 用户粘贴竞品爆款脚本，AI 分析结构后一键衍生多个变体
 
@@ -128,7 +128,7 @@ Phase 4（长期规划）: 独立大功能
 
 ### M6: 免配置体验模式 `P0` `涉及共享文件`
 
-**状态**: 🔴 待开始
+**状态**: 🟢 已完成
 
 **目标**: 新用户无需 API Key 即可体验核心功能（有限次数）
 
@@ -155,7 +155,7 @@ Phase 4（长期规划）: 独立大功能
 
 ### M8: 脚本评分一键优化 `P1`
 
-**状态**: 🔴 待开始
+**状态**: 🟢 已完成
 
 **目标**: 评分后的改进建议可一键应用，自动重新生成优化版本
 
@@ -174,7 +174,7 @@ Phase 4（长期规划）: 独立大功能
 
 ### M3: 视频分析量化评分 `P1`
 
-**状态**: 🔴 待开始
+**状态**: 🟢 已完成
 
 **目标**: 分析报告增加量化维度评分，支持对比分析
 
@@ -193,7 +193,7 @@ Phase 4（长期规划）: 独立大功能
 
 ### M7: 导出格式扩展 `P1` `独立`
 
-**状态**: 🔴 待开始
+**状态**: 🟢 已完成
 
 **目标**: 支持 Word/PDF/PPT 导出，增加分享链接
 
@@ -215,7 +215,7 @@ Phase 4（长期规划）: 独立大功能
 
 ### M2: 热点数据源增强 `P1`
 
-**状态**: 🔴 待开始
+**状态**: 🟢 已完成
 
 **目标**: 主题推荐增加真实数据支撑，增加热点周报
 
@@ -235,7 +235,7 @@ Phase 4（长期规划）: 独立大功能
 
 ### M4: 分镜→视频片段 `P2` `大功能`
 
-**状态**: 🔴 待开始
+**状态**: 🟢 已完成（UI框架+占位）
 
 **目标**: 每个镜头可生成 2~5s 视频片段
 
@@ -255,7 +255,7 @@ Phase 4（长期规划）: 独立大功能
 
 ### M9: 游戏库增强 `P2`
 
-**状态**: 🔴 待开始
+**状态**: 🟢 已完成
 
 **目标**: 丰富游戏信息字段，支持素材关联
 
@@ -328,3 +328,11 @@ Phase 4（长期规划）: 独立大功能
 | 2026-03-05 | — | 创建总控计划 | 初始版本 |
 | 2026-03-05 | M5 | 🟢 完成 | 模板扩充到 50+，新增品类筛选/搜索/使用量统计/预览功能。改动: template.ts, script-templates.ts, template-store.ts, template-gallery.vue, template-card.vue, types/index.ts |
 | 2026-03-05 | M10 | 🟢 完成 | 配置面板增加智能推荐按钮、改进进度条、折叠摘要显示、空状态增加快速开始向导。新增: use-smart-config.ts。改动: config-panel.vue, empty-state.vue |
+| 2026-03-05 | M1 | 🟢 完成 | 爆款裂变功能。新增: viral-prompt-builder.ts, use-viral-generation.ts, viral-input-dialog.vue。改动: quick-actions.vue, chat-input.vue |
+| 2026-03-05 | M6 | 🟢 完成 | 免配置体验模式UI框架。改动: settings-store.ts, api-config-dialog.vue, onboarding-dialog.vue |
+| 2026-03-05 | M8 | 🟢 完成 | 脚本评分一键优化。改动: use-script-score.ts, score-card.vue, script-actions.vue |
+| 2026-03-05 | M3 | 🟢 完成 | 视频分析量化评分。改动: analysis-prompt-builder.ts, use-video-analysis.ts, analysis-actions.vue |
+| 2026-03-05 | M7 | 🟢 完成 | 导出格式扩展。改动: export-formatter.ts, use-script-export.ts, export-menu.vue |
+| 2026-03-05 | M2 | 🟢 完成 | 热点数据源增强。改动: theme.ts, preset-themes.ts, use-theme-search.ts, theme-radar-store.ts, preset-themes.vue |
+| 2026-03-05 | M4 | 🟢 完成 | 分镜增强UI框架。改动: script-shot-renderer.vue, script.ts |
+| 2026-03-05 | M9 | 🟢 完成 | 游戏库增强。改动: game.ts, game-store.ts, game-manager-dialog.vue, prompt-builders |

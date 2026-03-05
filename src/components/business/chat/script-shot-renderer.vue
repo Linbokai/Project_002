@@ -1,14 +1,13 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { ChevronDown, ChevronRight, Film, Loader2, Pencil, X, Upload, User, Palette } from 'lucide-vue-next'
+import { ChevronDown, ChevronRight, Loader2, Pencil, X, Upload, User, Palette } from 'lucide-vue-next'
 import { parseFrames } from '@/services/helpers/frame-parser'
 import { useImageStore } from '@/stores/image-store'
 import BaseButton from '@/components/ui/base-button.vue'
-import BaseSelect from '@/components/ui/base-select.vue'
 import ScriptViewSwitcher from './script-view-switcher.vue'
 import ScriptTableView from './script-table-view.vue'
 import ScriptTimelineView from './script-timeline-view.vue'
-import type { ReferenceImage, ReferenceImageType, Shot } from '@/models/types'
+import type { ReferenceImage, ReferenceImageType } from '@/models/types'
 
 const props = defineProps<{
   content: string
@@ -92,24 +91,6 @@ const fieldLabels: Record<string, string> = {
   notes: '备注',
 }
 
-type StylePreset = NonNullable<Shot['stylePreset']>
-const STYLE_PRESET_OPTIONS: { value: StylePreset; label: string }[] = [
-  { value: 'realistic', label: '写实' },
-  { value: 'anime', label: '二次元' },
-  { value: 'pixel', label: '像素风' },
-  { value: 'cyberpunk', label: '赛博朋克' },
-  { value: 'ink', label: '水墨风' },
-]
-
-const shotStylePresets = ref<Record<number, StylePreset>>({})
-
-function getShotStylePreset(shotId: number): StylePreset {
-  return shotStylePresets.value[shotId] ?? 'realistic'
-}
-
-function setShotStylePreset(shotId: number, value: StylePreset) {
-  shotStylePresets.value = { ...shotStylePresets.value, [shotId]: value }
-}
 </script>
 
 <template>
@@ -298,74 +279,55 @@ function setShotStylePreset(shotId: number, value: StylePreset) {
 
     <!-- 卡片视图（默认） -->
     <template v-if="activeView === 'cards'">
-    <div
-      v-for="shot in shots"
-      :key="shot.id"
-      class="rounded-md border border-border/40 bg-card/50 px-3 py-2.5"
-    >
-      <!-- 时间 + 段名 + 景别 -->
-      <div class="mb-1.5 flex items-baseline gap-2">
-        <span v-if="shot.timeRange" class="text-xs font-mono font-semibold text-brand">
-          {{ shot.timeRange }}
-        </span>
-        <span class="text-xs font-medium text-foreground">
-          {{ shot.segment }}
-        </span>
-        <span v-if="shot.scale" class="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
-          {{ shot.scale }}
-        </span>
-      </div>
-
-      <!-- 画面 -->
-      <div v-if="shot.scene" class="mb-1">
-        <div class="flex items-start gap-1">
-          <span class="shrink-0 text-xs font-medium text-muted-foreground">画面:</span>
-          <span class="whitespace-pre-wrap text-xs leading-relaxed text-foreground">{{ shot.scene }}</span>
-        </div>
-      </div>
-
-      <!-- 口播台词 -->
-      <div v-if="shot.voiceover" class="mb-1">
-        <div class="flex items-start gap-1">
-          <span class="shrink-0 text-xs font-medium text-muted-foreground">台词:</span>
-          <span class="whitespace-pre-wrap text-xs leading-relaxed text-foreground">{{ shot.voiceover }}</span>
-        </div>
-      </div>
-
-      <!-- 其他字段 -->
-      <template v-for="(label, field) in fieldLabels" :key="field">
-        <div
-          v-if="(shot as unknown as Record<string, unknown>)[field]"
-          class="flex items-start gap-1"
-        >
-          <span class="shrink-0 text-xs font-medium text-muted-foreground">{{ label }}:</span>
-          <span class="text-xs leading-relaxed text-foreground">
-            {{ (shot as unknown as Record<string, unknown>)[field] }}
+    <div class="divide-y divide-border/40">
+      <div
+        v-for="(shot, idx) in shots"
+        :key="shot.id"
+        class="py-3 first:pt-0"
+      >
+        <!-- 头部：编号 + 时间 + 段名 ———— 景别 -->
+        <div class="mb-2 flex items-center gap-2">
+          <span class="shrink-0 text-xs font-bold text-brand">{{ idx + 1 }}</span>
+          <span
+            v-if="shot.timeRange"
+            class="shrink-0 font-mono text-xs font-semibold text-brand/80"
+          >
+            {{ shot.timeRange }}
+          </span>
+          <span class="text-sm font-medium text-foreground">
+            {{ shot.segment }}
+          </span>
+          <span class="flex-1 border-b border-border/30" />
+          <span
+            v-if="shot.scale"
+            class="shrink-0 text-xs text-muted-foreground"
+          >
+            {{ shot.scale }}
           </span>
         </div>
-      </template>
 
-      <!-- 操作区域：画面风格预设 + 生成视频 -->
-      <div class="mt-2 flex flex-wrap items-center gap-2 border-t border-border/40 pt-2">
-        <div class="flex items-center gap-1.5">
-          <span class="text-[11px] text-muted-foreground">画面风格:</span>
-          <BaseSelect
-            :model-value="getShotStylePreset(shot.id)"
-            :options="STYLE_PRESET_OPTIONS"
-            placeholder="选择风格"
-            class="min-w-[7rem]"
-            @update:model-value="(v) => setShotStylePreset(shot.id, v as StylePreset)"
-          />
+        <!-- 字段列表 -->
+        <div class="space-y-1">
+          <div v-if="shot.scene" class="flex items-start gap-1.5">
+            <span class="shrink-0 text-sm font-medium text-muted-foreground">画面:</span>
+            <span class="whitespace-pre-wrap text-sm leading-relaxed text-foreground">{{ shot.scene }}</span>
+          </div>
+          <div v-if="shot.voiceover" class="flex items-start gap-1.5">
+            <span class="shrink-0 text-sm font-medium text-muted-foreground">台词:</span>
+            <span class="whitespace-pre-wrap text-sm leading-relaxed text-foreground">{{ shot.voiceover }}</span>
+          </div>
+          <template v-for="(label, field) in fieldLabels" :key="field">
+            <div
+              v-if="(shot as unknown as Record<string, unknown>)[field]"
+              class="flex items-start gap-1.5"
+            >
+              <span class="shrink-0 text-sm font-medium text-muted-foreground">{{ label }}:</span>
+              <span class="text-sm leading-relaxed text-foreground">
+                {{ (shot as unknown as Record<string, unknown>)[field] }}
+              </span>
+            </div>
+          </template>
         </div>
-        <button
-          type="button"
-          class="rounded-md px-2 py-1 text-[11px] text-muted-foreground bg-muted cursor-not-allowed opacity-50"
-          title="视频生成功能即将推出"
-          disabled
-        >
-          <Film :size="12" class="inline mr-0.5" />
-          生成视频
-        </button>
       </div>
     </div>
     </template>

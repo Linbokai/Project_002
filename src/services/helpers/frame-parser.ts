@@ -81,13 +81,56 @@ function extractAllFields(block: string): ExtractedFields {
 }
 
 export function parseFrames(text: string): Shot[] {
-  const shots = tryTimelineFormat(text)
+  const shots = trySchemeFormat(text)
+    ?? tryTimelineFormat(text)
     ?? tryBracketFormat(text)
     ?? tryShotNumberFormat(text)
     ?? tryNumberListFormat(text)
     ?? fallbackParagraphs(text)
 
   return shots.map((s, i) => ({ ...s, id: i + 1 }))
+}
+
+function trySchemeFormat(text: string): Omit<Shot, 'id'>[] | null {
+  const schemeRe = /#{2,3}\s*(?:方案|变体)[一二三四五六七八九十\d]+[：:]\s*(.+)/g
+  const schemeHeaders = [...text.matchAll(schemeRe)]
+  if (schemeHeaders.length < 2) return null
+
+  const shots: Omit<Shot, 'id'>[] = []
+
+  for (let si = 0; si < schemeHeaders.length; si++) {
+    const header = schemeHeaders[si]!
+    const schemeName = header[1]!.trim()
+    const start = header.index! + header[0].length
+    const end = si + 1 < schemeHeaders.length ? schemeHeaders[si + 1]!.index! : text.length
+    const body = text.slice(start, end)
+
+    const subShots = tryTimelineLike(body)
+    if (subShots) {
+      subShots.forEach((s, i) => {
+        shots.push({
+          ...s,
+          segment: i === 0 ? `${schemeName} · ${s.segment}` : s.segment,
+        })
+      })
+    } else {
+      shots.push({ timeRange: '', segment: schemeName, ...extractAllFields(body) })
+    }
+  }
+
+  return shots.length > 0 ? shots : null
+}
+
+function tryTimelineLike(text: string): Omit<Shot, 'id'>[] | null {
+  const re = /#{0,4}\s*(\d+-\d+s?)\s+([^\n]+)\n([\s\S]*?)(?=#{0,4}\s*\d+-\d+s?\s|$)/g
+  const matches = [...text.matchAll(re)]
+  if (matches.length < 1) return null
+
+  return matches.map((m) => ({
+    ...extractAllFields(m[3]!),
+    timeRange: m[1]!,
+    segment: m[2]!.trim(),
+  }))
 }
 
 function tryTimelineFormat(text: string): Omit<Shot, 'id'>[] | null {
