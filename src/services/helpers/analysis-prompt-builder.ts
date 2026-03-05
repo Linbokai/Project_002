@@ -95,7 +95,7 @@ function formatConfigContext(config: GenerationConfig, game: Game | null): strin
   const parts: string[] = []
 
   if (game) {
-    parts.push(`游戏：${game.name}（${game.genre}），卖点：${game.sell}`)
+    parts.push(`游戏：${game.name}（${game.type}），卖点：${game.coreSellingPoints.join('、')}`)
   }
 
   const scriptType = SCRIPT_TYPES.find((t) => t.id === config.scriptType)

@@ -59,7 +59,7 @@ function buildContextSection(config: GenerationConfig, game: Game | null): strin
   const lines = ['## 任务上下文']
 
   if (game) {
-    lines.push(`\n### 游戏信息\n- 游戏名称：${game.name}\n- 游戏类型：${game.genre}\n- 核心卖点：${game.sell}`)
+    lines.push(`\n### 游戏信息\n- 游戏名称：${game.name}\n- 游戏类型：${game.type}\n- 核心卖点：${game.coreSellingPoints.join('、')}`)
   }
 
   if (config.selectedSellTags.length > 0) {

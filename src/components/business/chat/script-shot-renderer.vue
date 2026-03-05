@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { ChevronDown, ChevronRight, Loader2, Pencil, X, Upload, User, Palette } from 'lucide-vue-next'
+import { ChevronDown, ChevronRight, Film, Loader2, Pencil, X, Upload, User, Palette } from 'lucide-vue-next'
 import { parseFrames } from '@/services/helpers/frame-parser'
 import { useImageStore } from '@/stores/image-store'
 import BaseButton from '@/components/ui/base-button.vue'
+import BaseSelect from '@/components/ui/base-select.vue'
 import ScriptViewSwitcher from './script-view-switcher.vue'
 import ScriptTableView from './script-table-view.vue'
 import ScriptTimelineView from './script-timeline-view.vue'
-import type { ReferenceImage, ReferenceImageType } from '@/models/types'
+import type { ReferenceImage, ReferenceImageType, Shot } from '@/models/types'
 
 const props = defineProps<{
   content: string
@@ -89,6 +90,25 @@ const fieldLabels: Record<string, string> = {
   transition: '转场',
   sfx: '音效',
   notes: '备注',
+}
+
+type StylePreset = NonNullable<Shot['stylePreset']>
+const STYLE_PRESET_OPTIONS: { value: StylePreset; label: string }[] = [
+  { value: 'realistic', label: '写实' },
+  { value: 'anime', label: '二次元' },
+  { value: 'pixel', label: '像素风' },
+  { value: 'cyberpunk', label: '赛博朋克' },
+  { value: 'ink', label: '水墨风' },
+]
+
+const shotStylePresets = ref<Record<number, StylePreset>>({})
+
+function getShotStylePreset(shotId: number): StylePreset {
+  return shotStylePresets.value[shotId] ?? 'realistic'
+}
+
+function setShotStylePreset(shotId: number, value: StylePreset) {
+  shotStylePresets.value = { ...shotStylePresets.value, [shotId]: value }
 }
 </script>
 
@@ -324,6 +344,29 @@ const fieldLabels: Record<string, string> = {
           </span>
         </div>
       </template>
+
+      <!-- 操作区域：画面风格预设 + 生成视频 -->
+      <div class="mt-2 flex flex-wrap items-center gap-2 border-t border-border/40 pt-2">
+        <div class="flex items-center gap-1.5">
+          <span class="text-[11px] text-muted-foreground">画面风格:</span>
+          <BaseSelect
+            :model-value="getShotStylePreset(shot.id)"
+            :options="STYLE_PRESET_OPTIONS"
+            placeholder="选择风格"
+            class="min-w-[7rem]"
+            @update:model-value="(v) => setShotStylePreset(shot.id, v as StylePreset)"
+          />
+        </div>
+        <button
+          type="button"
+          class="rounded-md px-2 py-1 text-[11px] text-muted-foreground bg-muted cursor-not-allowed opacity-50"
+          title="视频生成功能即将推出"
+          disabled
+        >
+          <Film :size="12" class="inline mr-0.5" />
+          生成视频
+        </button>
+      </div>
     </div>
     </template>
 

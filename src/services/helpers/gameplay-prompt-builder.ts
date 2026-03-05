@@ -147,7 +147,7 @@ function buildUeContextSection(config: GenerationConfig, game: Game | null): str
   const lines = ['## 任务上下文']
 
   if (game) {
-    lines.push(`\n### 游戏信息\n- 游戏名称：${game.name}\n- 游戏类型：${game.genre}\n- 核心卖点：${game.sell}`)
+    lines.push(`\n### 游戏信息\n- 游戏名称：${game.name}\n- 游戏类型：${game.type}\n- 核心卖点：${game.coreSellingPoints.join('、')}`)
   }
 
   const contentLabel = config.ueContentType === UeContentType.Showcase ? '展示类' : '创意玩法'
@@ -248,7 +248,7 @@ export function buildGameplayDirectionsPrompt(
   )
 
   const gameInfo = game
-    ? `游戏名称：${game.name}\n游戏类型：${game.genre}\n核心卖点：${game.sell}`
+    ? `游戏名称：${game.name}\n游戏类型：${game.type}\n核心卖点：${game.coreSellingPoints.join('、')}`
     : '（未指定游戏）'
 
   const presetInfo = selectedPresets.length > 0

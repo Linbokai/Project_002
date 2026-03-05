@@ -1,7 +1,7 @@
 export type { ChatMessage, VideoMetrics, ChatSession } from './chat'
 export type { Shot, ParsedScript } from './script'
 export type { ThemeTopic, PresetTheme, CustomTheme } from './theme'
-export type { Game } from './game'
+export type { Game, GameAsset } from './game'
 export type {
   HeroConfig,
   CollabIPConfig,

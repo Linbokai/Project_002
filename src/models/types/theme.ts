@@ -18,6 +18,10 @@ export interface PresetTheme {
   description: string
   category: ThemeCategory
   scenes: string[]
+  /** 数据来源：AI 推理 / 平台数据 */
+  source?: 'ai' | 'platform'
+  /** 热度趋势指标 1-100 */
+  trendScore?: number
 }
 
 export interface CustomTheme {
