@@ -1,7 +1,7 @@
 import type { GenerationConfig, Game } from '@/models/types'
 import type { HookPattern } from '@/constants/hook-patterns'
 import type { RhythmTemplate } from '@/constants/rhythm-templates'
-import { SCRIPT_TYPES } from '@/constants/script-types'
+import { SCRIPT_TYPES, type ScriptTypeConfig } from '@/constants/script-types'
 import { AUDIENCE_PROFILES } from '@/constants/audience-profiles'
 import { SEEDANCE_PROMPT_GUIDE } from '@/constants/seedance-reference'
 import { AspectRatio, AudienceType } from '@/models/enums'
@@ -12,12 +12,13 @@ export function buildSystemPrompt(
   config: GenerationConfig,
   game: Game | null,
   extraContext?: string,
+  scriptTypeOverride?: ScriptTypeConfig,
 ): string {
   const sections: string[] = []
-  const scriptType = SCRIPT_TYPES.find((t) => t.id === config.scriptType)
+  const scriptType = scriptTypeOverride ?? SCRIPT_TYPES.find((t) => t.id === config.scriptType)
 
   sections.push(buildRoleSection(scriptType?.role))
-  sections.push(buildScriptTypeSection(config))
+  sections.push(buildScriptTypeSection(config, scriptType))
   sections.push(buildHookSection(config))
   sections.push(buildRhythmSection(config.duration))
   sections.push(buildContextSection(config, game))
@@ -98,8 +99,7 @@ function buildContextSection(config: GenerationConfig, game: Game | null): strin
   return lines.join('\n')
 }
 
-function buildScriptTypeSection(config: GenerationConfig): string {
-  const scriptType = SCRIPT_TYPES.find((t) => t.id === config.scriptType)
+function buildScriptTypeSection(_config: GenerationConfig, scriptType?: ScriptTypeConfig): string {
   if (!scriptType) return ''
 
   const lines = [
@@ -107,7 +107,25 @@ function buildScriptTypeSection(config: GenerationConfig): string {
     '',
     `> ⚠️ 你必须严格按照「${scriptType.name}」的输出格式和创作规则生成脚本。这是不可违反的硬性约束。`,
     '',
-    `### 输出格式（必须逐字段输出，禁止合并或省略）\n${scriptType.format}`,
+    `### 输出格式（必须逐字段输出，禁止合并或省略）`,
+    scriptType.format,
+    '',
+    '### ⛔ 格式硬性禁令',
+    '- 每个字段必须独占一行，一行只写一个字段',
+    '- 禁止使用 | 管道符/竖线分隔字段',
+    '- 禁止使用 markdown 表格格式',
+    '- 禁止使用 <br> 等 HTML 标签',
+    '- 禁止将多个字段合并到同一行',
+    '',
+    '正确示例（仅演示格式，非实际内容）：',
+    '```',
+    '## 0-3s 钩子',
+    '- **景别**：特写',
+    '- **画面**：角色冲入敌群',
+    '- **镜头**：快速推近',
+    '- **音效**：爆炸音效',
+    '- **转场**：闪白',
+    '```',
     '',
     '### 创作规则（必须全部遵守）',
     ...scriptType.rules.map((r) => `- ${r}`),

@@ -20,8 +20,8 @@ import { useConfigStore } from '@/stores/config-store'
 import { useGameStore } from '@/stores/game-store'
 import { useThemeRadarStore } from '@/stores/theme-radar-store'
 import { useGameplayRadarStore } from '@/stores/gameplay-radar-store'
-import { ProductionDirection, UeContentType, ScriptType, AudienceType, AspectRatio } from '@/models/enums'
-import { SCRIPT_TYPES } from '@/constants/script-types'
+import { ProductionDirection, UeContentType, ScriptType, ScriptCategory, AudienceType, AspectRatio } from '@/models/enums'
+import { SCRIPT_TYPES, SCRIPT_CATEGORIES } from '@/constants/script-types'
 import { AUDIENCE_PROFILES } from '@/constants/audience-profiles'
 import { SELL_TAG_GROUPS } from '@/constants/sell-tags'
 
@@ -44,7 +44,9 @@ const gameOptions = computed(() => {
 
 const SCRIPT_2D_TYPES = [
   ScriptType.VoGuide, ScriptType.VoIntro, ScriptType.VoBenefit,
-  ScriptType.Showcase, ScriptType.CgStory, ScriptType.Hook5s, ScriptType.Skit,
+  ScriptType.ShowcaseCharacter, ScriptType.ShowcaseMap,
+  ScriptType.CgStory, ScriptType.Skit,
+  ScriptType.Hook5s,
 ]
 const UE_TYPES = [
   ScriptType.UeShowcasePV, ScriptType.UeShowcaseMapRun,
@@ -57,6 +59,32 @@ const scriptTypeOptions = computed(() => {
     .filter((s) => allowedIds.includes(s.id))
     .map((s) => ({ value: s.id, label: s.name, description: s.description }))
 })
+
+const categoryOptions = SCRIPT_CATEGORIES.map((c) => ({
+  value: c.id,
+  label: c.name,
+  description: c.description,
+}))
+
+const activeCategory = computed(() => {
+  const current = SCRIPT_TYPES.find((t) => t.id === configStore.config.scriptType)
+  return current?.category ?? ScriptCategory.Voiceover
+})
+
+const filteredTypeOptions = computed(() =>
+  SCRIPT_TYPES
+    .filter((s) => s.category === activeCategory.value && SCRIPT_2D_TYPES.includes(s.id))
+    .map((s) => ({ value: s.id, label: s.name, description: s.description })),
+)
+
+function onCategoryChange(catId: string) {
+  const firstType = SCRIPT_TYPES.find(
+    (s) => s.category === catId && SCRIPT_2D_TYPES.includes(s.id),
+  )
+  if (firstType) {
+    configStore.updateConfig({ scriptType: firstType.id })
+  }
+}
 
 const audienceOptions = AUDIENCE_PROFILES.map((p) => ({
   value: p.id,
@@ -231,7 +259,7 @@ const sellTagCount = computed(() => configStore.config.selectedSellTags.length)
             </div>
           </div>
 
-          <!-- Script Type -->
+          <!-- Script Type: 2D two-level / UE flat -->
           <div class="flex flex-col gap-1.5">
             <label class="flex items-center gap-1 text-xs font-medium">
               脚本类型
@@ -240,7 +268,22 @@ const sellTagCount = computed(() => configStore.config.selectedSellTags.length)
                 <span class="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded-md bg-popover px-2 py-1 text-[11px] text-popover-foreground shadow-md opacity-0 transition-opacity group-hover:opacity-100">决定脚本风格和叙事结构</span>
               </span>
             </label>
+            <template v-if="!isUeDirection">
+              <BaseSelect
+                :model-value="activeCategory"
+                :options="categoryOptions"
+                placeholder="选择脚本大类"
+                @update:model-value="onCategoryChange"
+              />
+              <BaseSelect
+                :model-value="configStore.config.scriptType"
+                :options="filteredTypeOptions"
+                placeholder="选择具体类型"
+                @update:model-value="(v) => configStore.updateConfig({ scriptType: v as ScriptType })"
+              />
+            </template>
             <BaseSelect
+              v-else
               :model-value="configStore.config.scriptType"
               :options="scriptTypeOptions"
               placeholder="选择脚本类型"

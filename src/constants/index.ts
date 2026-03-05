@@ -9,6 +9,7 @@ export const STORAGE_KEYS = {
   SELL_TAGS: 'sg_sell_tags',
   GENERATION_CONFIG: 'sg_gen_cfg',
   SAFE_MODE: 'sg_safe_mode',
+  PROMPT_OVERRIDES: 'sg_prompt_overrides',
 } as const
 
 export const HISTORY_MAX = 30

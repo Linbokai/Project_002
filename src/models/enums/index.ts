@@ -12,11 +12,19 @@ export enum AspectRatio {
   Square = '1:1',
 }
 
+export enum ScriptCategory {
+  Voiceover = 'voiceover',
+  Showcase = 'showcase',
+  Story = 'story',
+  Hook = 'hook',
+}
+
 export enum ScriptType {
   VoGuide = 'vo_guide',
   VoIntro = 'vo_intro',
   VoBenefit = 'vo_benefit',
-  Showcase = 'showcase',
+  ShowcaseCharacter = 'showcase_character',
+  ShowcaseMap = 'showcase_map',
   CgStory = 'cg_story',
   Hook5s = 'hook5s',
   Skit = 'skit',

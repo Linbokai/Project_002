@@ -1,7 +1,21 @@
-import { ScriptType } from '@/models/enums'
+import { ScriptType, ScriptCategory } from '@/models/enums'
+
+export interface ScriptCategoryConfig {
+  id: ScriptCategory
+  name: string
+  description: string
+}
+
+export const SCRIPT_CATEGORIES: ScriptCategoryConfig[] = [
+  { id: ScriptCategory.Voiceover, name: '口播类', description: '全程有口播台词，台词驱动画面节奏' },
+  { id: ScriptCategory.Showcase, name: '展示类', description: '纯画面视觉驱动，无口播' },
+  { id: ScriptCategory.Story, name: '剧情类', description: '有角色对白和故事线/反转结构' },
+  { id: ScriptCategory.Hook, name: '钩子类', description: '超短格式，输出多方案' },
+]
 
 export interface ScriptTypeConfig {
   id: ScriptType
+  category: ScriptCategory
   name: string
   description: string
   role: string
@@ -12,6 +26,7 @@ export interface ScriptTypeConfig {
 export const SCRIPT_TYPES: ScriptTypeConfig[] = [
   {
     id: ScriptType.VoGuide,
+    category: ScriptCategory.Voiceover,
     name: '口播攻略',
     description: '全程口播不停嘴，主播风格讲解打法',
     role: '你是一位语速极快、表达夸张的游戏主播，全程口播不间断，用攻略讲解带动画面节奏。',
@@ -20,6 +35,7 @@ export const SCRIPT_TYPES: ScriptTypeConfig[] = [
   },
   {
     id: ScriptType.VoIntro,
+    category: ScriptCategory.Voiceover,
     name: '口播介绍',
     description: 'KOL安利种草风格，快节奏过卖点',
     role: '你是一位有感染力的KOL，用安利种草的语气快节奏介绍游戏卖点，让观众想下载。',
@@ -28,6 +44,7 @@ export const SCRIPT_TYPES: ScriptTypeConfig[] = [
   },
   {
     id: ScriptType.VoBenefit,
+    category: ScriptCategory.Voiceover,
     name: '口播福利',
     description: '紧急福利播报，强调限时紧迫感',
     role: '你是一位福利播报员，用紧急、兴奋的语气播报限时福利活动，制造紧迫感。',
@@ -35,15 +52,26 @@ export const SCRIPT_TYPES: ScriptTypeConfig[] = [
     rules: ['开头必须用"紧急通知"/"重大福利"等抓注意力', '强调"限时""仅限今天""错过就没了"', '福利内容具体化，有数字', '结尾用强CTA："现在就点击下载领取"'],
   },
   {
-    id: ScriptType.Showcase,
-    name: '展示类',
-    description: '纯画面视觉冲击，无口播',
-    role: '你是一位视觉导演，通过纯画面和镜头语言展示游戏的视觉冲击力，不使用口播。',
-    format: '按节奏蓝图的分段输出，每段包含以下字段：\n- **景别**：特写/近景/中景/全景\n- **画面**：简述场景内容和视觉重点\n- **镜头**：具体运镜方式和速度\n- **字幕**：屏幕文字（替代口播传递信息）\n- **特效**：视觉特效描述\n- **音效**：音频标注\n- **转场**：转场方式',
-    rules: ['完全不使用口播和旁白', '画面描述要具体到镜头角度和运动方式', '注重视觉冲击和节奏感', '用字幕/花字替代口播传递关键信息'],
+    id: ScriptType.ShowcaseCharacter,
+    category: ScriptCategory.Showcase,
+    name: '角色展示',
+    description: '纯画面展示角色魅力，无口播',
+    role: '你是一位角色展示视觉导演，通过纯画面和镜头语言展示游戏角色的魅力与战斗表现力，不使用口播。',
+    format: '按节奏蓝图的分段输出，每段包含以下字段：\n- **景别**：特写/近景/中景/全景\n- **画面**：简述角色动作、表情、技能释放等视觉重点\n- **镜头**：具体运镜方式和速度\n- **字幕**：屏幕文字（角色名/技能名/花字）\n- **特效**：技能特效、打击特效描述\n- **音效**：动作音效 + BGM 情绪\n- **转场**：转场方式',
+    rules: ['完全不使用口播和旁白', '必须包含角色全身亮相镜头和技能释放特写', '注重角色动态表现力：动作流畅感、打击感、技能华丽度', '用字幕/花字突出角色名、技能名等关键信息'],
+  },
+  {
+    id: ScriptType.ShowcaseMap,
+    category: ScriptCategory.Showcase,
+    name: '跑图展示',
+    description: '纯画面展示游戏世界与场景，无口播',
+    role: '你是一位场景展示视觉导演，通过镜头漫游展示游戏世界的规模感、美术品质和环境细节，不使用口播。',
+    format: '按节奏蓝图的分段输出，每段包含以下字段：\n- **景别**：特写/近景/中景/全景/航拍\n- **画面**：简述环境场景、光影氛围、地标建筑等视觉重点\n- **镜头**：具体运镜路径和速度，强调空间纵深\n- **字幕**：屏幕文字（地名/区域名/花字）\n- **特效**：环境粒子、天气效果描述\n- **音效**：环境音 + BGM 情绪\n- **转场**：转场方式',
+    rules: ['完全不使用口播和旁白', '镜头路径连贯流畅，营造漫游沉浸感', '每个场景需有环境叙事元素（地标/生态/昼夜变化等）', '注重远中近三层景深，展示世界规模感'],
   },
   {
     id: ScriptType.CgStory,
+    category: ScriptCategory.Story,
     name: 'CG剧情',
     description: '电影化叙事短片，有故事线和情感弧线',
     role: '你是一位CG短片导演，创作有完整故事线和情感弧线的电影化叙事，角色有对白和情感表达。',
@@ -51,15 +79,8 @@ export const SCRIPT_TYPES: ScriptTypeConfig[] = [
     rules: ['必须有完整故事线：起因→发展→高潮→结局', '角色要有名字和性格特征', '注重情感表达和氛围营造', '结尾自然过渡到游戏画面+CTA'],
   },
   {
-    id: ScriptType.Hook5s,
-    name: '5秒片头钩子',
-    description: '极短注意力炸弹，输出3-5个方案',
-    role: '你是一位专注前3-5秒钩子的创意专家，每个方案都是独立的注意力炸弹。',
-    format: '输出3-5个独立的5秒钩子方案，每个方案2-3个分镜。',
-    rules: ['每个方案独立成篇，互不关联', '第1秒必须有视觉/听觉冲击', '5秒内必须制造"想看下去"的悬念', '标注每个方案使用的钩子类型'],
-  },
-  {
     id: ScriptType.Skit,
+    category: ScriptCategory.Story,
     name: '剧情类',
     description: '短视频段子/小剧场，梗多反转狠',
     role: '你是一位短视频段子编剧，擅长用网络热梗和反转制造笑点/爽点，最后自然植入游戏。',
@@ -67,7 +88,17 @@ export const SCRIPT_TYPES: ScriptTypeConfig[] = [
     rules: ['开头1-2秒必须用熟悉场景吸引（如职场/学校/家庭）', '中间必须有至少一个反转', '多用当下热梗和网络用语', '游戏植入要自然，不生硬'],
   },
   {
+    id: ScriptType.Hook5s,
+    category: ScriptCategory.Hook,
+    name: '5秒片头钩子',
+    description: '极短注意力炸弹，输出3-5个方案',
+    role: '你是一位专注前3-5秒钩子的创意专家，每个方案都是独立的注意力炸弹。',
+    format: '输出3-5个独立的5秒钩子方案，每个方案2-3个分镜。',
+    rules: ['每个方案独立成篇，互不关联', '第1秒必须有视觉/听觉冲击', '5秒内必须制造"想看下去"的悬念', '标注每个方案使用的钩子类型'],
+  },
+  {
     id: ScriptType.UeShowcasePV,
+    category: ScriptCategory.Showcase,
     name: 'PV宣传片',
     description: 'UE级电影化品牌宣传片，镜头语言+叙事节奏',
     role: '你是一位精通Unreal Engine的CG宣传片导演，擅长用电影级镜头语言和光影叙事打造品牌级PV。',
@@ -76,6 +107,7 @@ export const SCRIPT_TYPES: ScriptTypeConfig[] = [
   },
   {
     id: ScriptType.UeShowcaseMapRun,
+    category: ScriptCategory.Showcase,
     name: '跑图展示',
     description: '大世界/关卡场景漫游，沉浸式环境展示',
     role: '你是一位3D环境艺术导演，擅长通过镜头漫游展示游戏世界的规模感和细节品质。',
@@ -84,6 +116,7 @@ export const SCRIPT_TYPES: ScriptTypeConfig[] = [
   },
   {
     id: ScriptType.UeShowcaseCharacter,
+    category: ScriptCategory.Showcase,
     name: '角色展示',
     description: '角色模型/动作/技能展示，突出3D材质与动态表现',
     role: '你是一位3D角色展示专家，擅长通过转盘、动作演示和技能特写展示角色的模型精度与动态魅力。',
@@ -92,6 +125,7 @@ export const SCRIPT_TYPES: ScriptTypeConfig[] = [
   },
   {
     id: ScriptType.UeGameplayScript,
+    category: ScriptCategory.Showcase,
     name: '创意玩法脚本',
     description: '创意玩法买量脚本，以玩法策划为核心驱动',
     role: '你首先是一位顶级游戏策划，其次才是买量创意导演。你的每一个镜头都在展示"这个游戏怎么玩、为什么好玩"。',
