@@ -25,3 +25,24 @@ export type {
   ShotImageKey,
   ScriptKey,
 } from './image'
+export type {
+  TaskType,
+  RoutingMode,
+  RoutingProfile,
+  OpenRouterModelInfo,
+  ModelScore,
+} from './model-routing'
+export type {
+  TemplateCategory,
+  TemplateConfig,
+  ScriptTemplate,
+  UserTemplate,
+} from './template'
+export type {
+  ScriptVariant,
+  VariantCount,
+} from './variant'
+export type {
+  ScoreDimension,
+  ScriptScore,
+} from './score'

@@ -41,11 +41,6 @@ function getDescription(): string {
   return props.gameplay.desc ?? ''
 }
 
-function getTier(): string | null {
-  if (!isGameplayPreset(props.gameplay)) return null
-  return props.gameplay.tier
-}
-
 function handleClick() {
   emit('toggle')
 }
@@ -54,91 +49,75 @@ function handleClick() {
 <template>
   <div
     :class="[
-      'cursor-pointer rounded-lg border p-3 transition-colors',
+      'cursor-pointer rounded-md px-2 py-1.5 transition-colors',
       selected
-        ? 'border-brand bg-brand/5'
-        : 'border-border hover:border-border/80'
+        ? 'bg-brand/8 text-foreground'
+        : 'hover:bg-muted/60'
     ]"
     role="button"
     tabindex="0"
     @click="handleClick"
     @keydown.enter.space.prevent="handleClick"
   >
-    <div class="flex items-start gap-2">
+    <div class="flex items-center gap-2">
       <component
         :is="selected ? CheckSquare : Square"
-        :size="18"
-        class="mt-0.5 shrink-0"
-        :class="selected ? 'text-brand' : 'text-muted-foreground'"
+        :size="15"
+        class="shrink-0"
+        :class="selected ? 'text-brand' : 'text-muted-foreground/50'"
       />
       <div class="min-w-0 flex-1">
-        <div class="flex flex-wrap items-center gap-1.5">
-          <span class="text-sm font-medium">{{ gameplay.name }}</span>
-          <BaseBadge
-            v-if="getTier()"
-            :variant="
-              getTier() === 'T1'
-                ? 'destructive'
-                : getTier() === 'T2'
-                  ? 'secondary'
-                  : 'outline'
-            "
-          >
-            {{ getTier() }}
-          </BaseBadge>
+        <div class="flex items-center gap-1.5">
+          <span class="truncate text-xs font-medium">{{ gameplay.name }}</span>
           <BaseBadge
             v-if="isGameplayTopic(gameplay) && gameplay.heat"
             variant="secondary"
+            class="shrink-0 text-[10px] leading-none px-1 py-0"
           >
             {{ gameplay.heat }}
           </BaseBadge>
         </div>
-        <p class="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
+        <p class="mt-0.5 truncate text-[11px] text-muted-foreground">
           {{ getDescription() }}
         </p>
-        <p
-          v-if="isGameplayTopic(gameplay) && gameplay.source"
-          class="mt-0.5 text-xs text-muted-foreground"
-        >
+      </div>
+      <button
+        v-if="hasDetails()"
+        type="button"
+        class="shrink-0 rounded p-0.5 text-muted-foreground/50 hover:text-foreground"
+        @click.stop="expanded = !expanded"
+      >
+        <ChevronDown
+          :size="13"
+          :class="['transition-transform', expanded && 'rotate-180']"
+        />
+      </button>
+    </div>
+    <div
+      v-if="expanded"
+      class="mt-1.5 ml-[23px] space-y-1.5 rounded bg-muted/40 p-2 text-[11px]"
+    >
+      <template v-if="isGameplayTopic(gameplay)">
+        <div v-if="gameplay.hooks?.length">
+          <p class="font-medium text-muted-foreground">视觉钩子</p>
+          <ul class="mt-0.5 list-inside list-disc space-y-0.5">
+            <li v-for="(h, i) in gameplay.hooks" :key="i">{{ h }}</li>
+          </ul>
+        </div>
+        <p v-if="gameplay.source" class="text-muted-foreground">
           来源：{{ gameplay.source }}
         </p>
-        <div v-if="hasDetails()" class="mt-2">
-          <button
-            type="button"
-            class="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-            @click.stop="expanded = !expanded"
-          >
-            <ChevronDown
-              :class="['transition-transform', expanded && 'rotate-180']"
-              :size="14"
-            />
-            {{ expanded ? '收起' : '展开详情' }}
-          </button>
-          <div
-            v-if="expanded"
-            class="mt-2 space-y-2 rounded border border-border/50 bg-muted/30 p-2 text-xs"
-          >
-            <template v-if="isGameplayTopic(gameplay)">
-              <div v-if="gameplay.hooks?.length">
-                <p class="font-medium text-muted-foreground">视觉钩子</p>
-                <ul class="mt-1 list-inside list-disc space-y-0.5">
-                  <li v-for="(h, i) in gameplay.hooks" :key="i">{{ h }}</li>
-                </ul>
-              </div>
-            </template>
-            <template v-else-if="isGameplayPreset(gameplay)">
-              <div v-if="gameplay.coreLoop">
-                <p class="font-medium text-muted-foreground">核心循环</p>
-                <p class="mt-1">{{ gameplay.coreLoop }}</p>
-              </div>
-              <div v-if="gameplay.visualHook">
-                <p class="font-medium text-muted-foreground">推荐视觉钩子</p>
-                <p class="mt-1">{{ gameplay.visualHook }}</p>
-              </div>
-            </template>
-          </div>
+      </template>
+      <template v-else-if="isGameplayPreset(gameplay)">
+        <div v-if="gameplay.coreLoop">
+          <p class="font-medium text-muted-foreground">核心循环</p>
+          <p class="mt-0.5">{{ gameplay.coreLoop }}</p>
         </div>
-      </div>
+        <div v-if="gameplay.visualHook">
+          <p class="font-medium text-muted-foreground">推荐视觉钩子</p>
+          <p class="mt-0.5">{{ gameplay.visualHook }}</p>
+        </div>
+      </template>
     </div>
   </div>
 </template>

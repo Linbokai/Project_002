@@ -8,8 +8,10 @@ import { useImageStore } from '@/stores/image-store'
 import { useThemeRadarStore } from '@/stores/theme-radar-store'
 import { useGameplayRadarStore } from '@/stores/gameplay-radar-store'
 import { usePromptStore } from '@/stores/prompt-store'
+import { useVariantStore } from '@/stores/variant-store'
 import { streamChat } from '@/services/api/openrouter-api'
 import { buildSystemPrompt } from '@/services/helpers/script-prompt-builder'
+import { buildVariantPromptSuffix } from '@/services/helpers/variant-prompt-builder'
 import { SCRIPT_TYPES } from '@/constants/script-types'
 import {
   buildUeSystemPrompt,
@@ -35,6 +37,7 @@ export function useChat() {
   const themeRadarStore = useThemeRadarStore()
   const gameplayRadarStore = useGameplayRadarStore()
   const promptStore = usePromptStore()
+  const variantStore = useVariantStore()
   const { showToast } = useToast()
 
   function saveSession() {
@@ -75,9 +78,10 @@ export function useChat() {
     const genConfig = unref(configStore.config)
     const currentGame = unref(gameStore.currentGame)
     const scriptTypeConfig = promptStore.getEffectiveConfig(genConfig.scriptType)
+    const platformHint = configStore.platformPromptHint || undefined
     const systemPrompt = genConfig.direction === ProductionDirection.UeGameplay
       ? buildUeSystemPrompt(genConfig, currentGame)
-      : buildSystemPrompt(genConfig, currentGame, undefined, scriptTypeConfig)
+      : buildSystemPrompt(genConfig, currentGame, platformHint, scriptTypeConfig)
     chatStore.addMessage({
       role: 'user',
       content: userText,
@@ -121,11 +125,86 @@ export function useChat() {
       return
     }
 
+    if (variantStore.variantCount > 1) {
+      await generateVariants()
+      return
+    }
+
     const scriptTypeName = SCRIPT_TYPES.find((t) => t.id === genConfig.scriptType)?.name ?? ''
     const prompt = genConfig.direction === ProductionDirection.UeGameplay
       ? '请根据以上配置生成3D/UE创意玩法买量脚本。先输出玩法策划简案，再写分镜脚本。'
       : `请根据以上配置，严格按照「${scriptTypeName}」脚本类型的输出格式和创作规则，生成买量视频脚本。`
     await runGeneration(prompt)
+  }
+
+  async function generateVariants(): Promise<void> {
+    const config = unref(settingsStore.config)
+    if (!config.openRouterKey) {
+      showToast('请先配置 API Key', 'destructive')
+      return
+    }
+
+    const genConfig = unref(configStore.config)
+    const currentGame = unref(gameStore.currentGame)
+    const scriptTypeConfig = promptStore.getEffectiveConfig(genConfig.scriptType)
+    const platformHint2 = configStore.platformPromptHint || undefined
+    const baseSystemPrompt = genConfig.direction === ProductionDirection.UeGameplay
+      ? buildUeSystemPrompt(genConfig, currentGame)
+      : buildSystemPrompt(genConfig, currentGame, platformHint2, scriptTypeConfig)
+
+    const count = variantStore.variantCount
+    const variants = variantStore.startGeneration()
+
+    chatStore.addMessage({
+      role: 'user',
+      content: `生成 ${count} 个脚本变体`,
+      timestamp: Date.now(),
+    })
+
+    const scriptTypeName = SCRIPT_TYPES.find((t) => t.id === genConfig.scriptType)?.name ?? ''
+    const userPrompt = genConfig.direction === ProductionDirection.UeGameplay
+      ? '请根据以上配置生成3D/UE创意玩法买量脚本。先输出玩法策划简案，再写分镜脚本。'
+      : `请根据以上配置，严格按照「${scriptTypeName}」脚本类型的输出格式和创作规则，生成买量视频脚本。`
+
+    const tasks = variants.map((variant, index) => {
+      const variantSuffix = buildVariantPromptSuffix(index, count)
+      const messages = [
+        { role: 'system', content: baseSystemPrompt + variantSuffix },
+        { role: 'user', content: userPrompt },
+      ]
+
+      return streamChat(
+        {
+          config,
+          model: settingsStore.getModelForTask('gen'),
+          messages,
+        },
+        {
+          onChunk: (chunk) => {
+            const v = variantStore.variants.find((v) => v.id === variant.id)
+            if (v) v.content += chunk
+          },
+          onDone: () => variantStore.finishVariant(variant.id),
+          onError: (err) => {
+            variantStore.updateVariant(variant.id, { generating: false, error: err })
+            variantStore.finishVariant(variant.id)
+          },
+        },
+      )
+    })
+
+    await Promise.allSettled(tasks)
+
+    const first = variantStore.variants.find((v) => v.content && !v.error)
+    if (first) {
+      chatStore.addMessage({
+        role: 'assistant',
+        content: first.content,
+        timestamp: Date.now(),
+        type: MessageType.Script,
+      })
+    }
+    saveSession()
   }
 
   async function generateGameplayDirections(): Promise<void> {

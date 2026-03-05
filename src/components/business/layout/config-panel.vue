@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { ChevronDown, Info } from 'lucide-vue-next'
+import { ChevronDown, Info, LayoutGrid, Save } from 'lucide-vue-next'
 import BaseButton from '@/components/ui/base-button.vue'
 import BaseSelect from '@/components/ui/base-select.vue'
 import BaseInput from '@/components/ui/base-input.vue'
@@ -12,6 +12,7 @@ import ThemeSearch from '@/components/business/theme-radar/theme-search.vue'
 import PresetThemes from '@/components/business/theme-radar/preset-themes.vue'
 import AddThemeForm from '@/components/business/theme-radar/add-theme-form.vue'
 import ThemeCard from '@/components/business/theme-radar/theme-card.vue'
+import PlatformAdSelector from '@/components/business/layout/platform-ad-selector.vue'
 import GameplaySearch from '@/components/business/gameplay-radar/gameplay-search.vue'
 import GameplayPresets from '@/components/business/gameplay-radar/gameplay-presets.vue'
 import AddGameplayForm from '@/components/business/gameplay-radar/add-gameplay-form.vue'
@@ -24,9 +25,15 @@ import { ProductionDirection, UeContentType, ScriptType, ScriptCategory, Audienc
 import { SCRIPT_TYPES, SCRIPT_CATEGORIES } from '@/constants/script-types'
 import { AUDIENCE_PROFILES } from '@/constants/audience-profiles'
 import { SELL_TAG_GROUPS } from '@/constants/sell-tags'
+import type { AdPlatform } from '@/constants/ad-platforms'
 
 defineProps<{
   collapsed?: boolean
+}>()
+
+const emit = defineEmits<{
+  'open-templates': []
+  'save-template': []
 }>()
 
 const configStore = useConfigStore()
@@ -35,6 +42,19 @@ const themeRadarStore = useThemeRadarStore()
 const gameplayRadarStore = useGameplayRadarStore()
 
 const isUeDirection = computed(() => configStore.config.direction === ProductionDirection.UeGameplay)
+
+function applyPlatformRecommendation(platform: AdPlatform) {
+  configStore.setPlatform(platform.id)
+  if (platform.id === 'general') return
+  const patch: Record<string, unknown> = {}
+  if (platform.recommendedAspectRatio) {
+    patch.aspectRatio = platform.recommendedAspectRatio
+  }
+  if (platform.recommendedDuration.length) {
+    patch.duration = platform.recommendedDuration[0]
+  }
+  configStore.updateConfig(patch as Partial<import('@/models/types').GenerationConfig>)
+}
 
 const gameOptions = computed(() => {
   const list = gameStore.games.map((g) => ({ value: g.id, label: g.name }))
@@ -125,6 +145,24 @@ const aspectRatioItems: { value: AspectRatio; label: string }[] = [
 const durationItems = [5, 10, 15, 30, 60]
 
 const sellTagCount = computed(() => configStore.config.selectedSellTags.length)
+
+const configProgress = computed(() => {
+  const checks = [
+    configStore.config.gameId !== '',
+    radarSelectedCount.value > 0,
+    sellTagCount.value > 0,
+  ]
+  return {
+    done: checks.filter(Boolean).length,
+    total: checks.length,
+    percent: Math.round((checks.filter(Boolean).length / checks.length) * 100),
+    items: [
+      { label: '游戏', done: checks[0] },
+      { label: isUeDirection.value ? '玩法' : '主题', done: checks[1] },
+      { label: '卖点', done: checks[2] },
+    ],
+  }
+})
 </script>
 
 <template>
@@ -135,6 +173,54 @@ const sellTagCount = computed(() => configStore.config.selectedSellTags.length)
   >
     <div class="flex-1 overflow-y-auto">
 
+      <!-- ==================== Template Toolbar ==================== -->
+      <div class="flex items-center gap-2 border-b border-border px-4 py-2.5">
+        <button
+          type="button"
+          class="inline-flex flex-1 items-center justify-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground shadow-xs transition-colors hover:bg-accent"
+          @click="emit('open-templates')"
+        >
+          <LayoutGrid :size="14" />
+          模板中心
+        </button>
+        <button
+          type="button"
+          class="inline-flex flex-1 items-center justify-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground shadow-xs transition-colors hover:bg-accent"
+          @click="emit('save-template')"
+        >
+          <Save :size="14" />
+          保存为模板
+        </button>
+      </div>
+
+      <!-- ==================== Progress Indicator ==================== -->
+      <div class="border-b border-border px-4 py-2.5">
+        <div class="flex items-center justify-between mb-1.5">
+          <span class="text-[11px] text-muted-foreground">配置完成度</span>
+          <span class="text-[11px] font-medium" :class="configProgress.percent === 100 ? 'text-brand' : 'text-muted-foreground'">
+            {{ configProgress.done }}/{{ configProgress.total }}
+          </span>
+        </div>
+        <div class="flex gap-1">
+          <div
+            v-for="item in configProgress.items"
+            :key="item.label"
+            class="flex-1"
+          >
+            <div
+              class="h-1 rounded-full transition-colors duration-300"
+              :class="item.done ? 'bg-brand' : 'bg-muted-foreground/15'"
+            />
+            <span
+              class="mt-0.5 block text-center text-[10px] transition-colors"
+              :class="item.done ? 'text-brand' : 'text-muted-foreground/50'"
+            >
+              {{ item.label }}
+            </span>
+          </div>
+        </div>
+      </div>
+
       <!-- ==================== Section 1: Basic Config ==================== -->
       <div class="border-b border-border">
         <button
@@ -144,13 +230,18 @@ const sellTagCount = computed(() => configStore.config.selectedSellTags.length)
         >
           <ChevronDown
             :size="16"
-            class="shrink-0 text-muted-foreground transition-transform"
+            class="shrink-0 text-muted-foreground transition-transform duration-300"
             :class="{ '-rotate-90': !sectionOpen.basic }"
           />
           <span class="text-sm font-semibold">基础配置</span>
         </button>
 
-        <div v-show="sectionOpen.basic" class="flex flex-col gap-4 px-4 pb-4">
+        <div
+          class="grid transition-[grid-template-rows] duration-300 ease-in-out"
+          :class="sectionOpen.basic ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'"
+        >
+        <div class="overflow-hidden">
+        <div class="flex flex-col gap-4 px-4 pb-4">
           <!-- Direction -->
           <div class="flex flex-col gap-1.5">
             <label class="flex items-center gap-1 text-xs font-medium">
@@ -194,6 +285,16 @@ const sellTagCount = computed(() => configStore.config.selectedSellTags.length)
               :options="gameOptions"
               placeholder="选择游戏"
               @update:model-value="(v) => configStore.updateConfig({ gameId: v })"
+            />
+          </div>
+
+          <!-- Platform -->
+          <div class="flex flex-col gap-1.5">
+            <label class="text-xs font-medium">投放平台</label>
+            <PlatformAdSelector
+              :model-value="configStore.platformId"
+              @update:model-value="configStore.setPlatform"
+              @apply-recommendation="applyPlatformRecommendation"
             />
           </div>
 
@@ -314,6 +415,8 @@ const sellTagCount = computed(() => configStore.config.selectedSellTags.length)
             />
           </div>
         </div>
+        </div>
+        </div>
       </div>
 
       <!-- ==================== Section 2: Theme / Gameplay Radar ==================== -->
@@ -325,7 +428,7 @@ const sellTagCount = computed(() => configStore.config.selectedSellTags.length)
         >
           <ChevronDown
             :size="16"
-            class="shrink-0 text-muted-foreground transition-transform"
+            class="shrink-0 text-muted-foreground transition-transform duration-300"
             :class="{ '-rotate-90': !sectionOpen.radar }"
           />
           <span class="text-sm font-semibold">
@@ -336,7 +439,12 @@ const sellTagCount = computed(() => configStore.config.selectedSellTags.length)
           </BaseBadge>
         </button>
 
-        <div v-show="sectionOpen.radar" class="flex flex-col gap-3 px-4 pb-4">
+        <div
+          class="grid transition-[grid-template-rows] duration-300 ease-in-out"
+          :class="sectionOpen.radar ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'"
+        >
+        <div class="overflow-hidden">
+        <div class="flex flex-col gap-3 px-4 pb-4">
           <p class="text-[11px] text-muted-foreground">
             选择 1-3 个热门{{ isUeDirection ? '玩法' : '主题' }}，AI 会围绕这些{{ isUeDirection ? '玩法' : '主题' }}写脚本
           </p>
@@ -449,6 +557,8 @@ const sellTagCount = computed(() => configStore.config.selectedSellTags.length)
             </template>
           </div>
         </div>
+        </div>
+        </div>
       </div>
 
       <!-- ==================== Section 3: Sell Tags (promoted) ==================== -->
@@ -460,7 +570,7 @@ const sellTagCount = computed(() => configStore.config.selectedSellTags.length)
         >
           <ChevronDown
             :size="16"
-            class="shrink-0 text-muted-foreground transition-transform"
+            class="shrink-0 text-muted-foreground transition-transform duration-300"
             :class="{ '-rotate-90': !sectionOpen.sellTags }"
           />
           <span class="text-sm font-semibold">卖点标签</span>
@@ -473,15 +583,23 @@ const sellTagCount = computed(() => configStore.config.selectedSellTags.length)
           </BaseBadge>
         </button>
 
-        <div v-show="sectionOpen.sellTags" class="flex flex-col gap-3 px-4 pb-4">
+        <div
+          class="grid transition-[grid-template-rows] duration-300 ease-in-out"
+          :class="sectionOpen.sellTags ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'"
+        >
+        <div class="overflow-hidden">
+        <div class="flex flex-col gap-3 px-4 pb-4">
           <div
             v-for="group in SELL_TAG_GROUPS"
             :key="group.id"
             class="flex flex-col gap-1.5"
           >
-            <div class="flex items-center gap-1.5">
-              <span class="text-[11px] font-medium">{{ group.name }}</span>
-              <BaseBadge :class="group.colorClass" class="text-[10px]">{{ group.position }}</BaseBadge>
+            <div class="flex items-center gap-1">
+              <span class="text-xs font-medium text-muted-foreground">{{ group.name }}</span>
+              <span class="group relative">
+                <Info :size="12" class="text-muted-foreground/60" />
+                <span class="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded-md bg-popover px-2 py-1 text-[11px] text-popover-foreground shadow-md opacity-0 transition-opacity group-hover:opacity-100">{{ group.position }}</span>
+              </span>
             </div>
             <ChipSelect
               :model-value="configStore.config.selectedSellTags"
@@ -489,6 +607,8 @@ const sellTagCount = computed(() => configStore.config.selectedSellTags.length)
               @update:model-value="(val) => configStore.updateConfig({ selectedSellTags: val })"
             />
           </div>
+        </div>
+        </div>
         </div>
       </div>
 
@@ -501,13 +621,18 @@ const sellTagCount = computed(() => configStore.config.selectedSellTags.length)
         >
           <ChevronDown
             :size="16"
-            class="shrink-0 text-muted-foreground transition-transform"
+            class="shrink-0 text-muted-foreground transition-transform duration-300"
             :class="{ '-rotate-90': !sectionOpen.advanced }"
           />
           <span class="text-sm font-semibold">高级参数</span>
         </button>
 
-        <div v-show="sectionOpen.advanced" class="flex flex-col gap-4 px-4 pb-4">
+        <div
+          class="grid transition-[grid-template-rows] duration-300 ease-in-out"
+          :class="sectionOpen.advanced ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'"
+        >
+        <div class="overflow-hidden">
+        <div class="flex flex-col gap-4 px-4 pb-4">
           <!-- Hero -->
           <div class="flex flex-col gap-1.5">
             <label class="flex items-center gap-1 text-xs font-medium">
@@ -596,6 +721,8 @@ const sellTagCount = computed(() => configStore.config.selectedSellTags.length)
               />
             </template>
           </div>
+        </div>
+        </div>
         </div>
       </div>
 

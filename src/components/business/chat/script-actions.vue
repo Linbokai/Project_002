@@ -2,10 +2,13 @@
 import { ref, computed } from 'vue'
 import BaseButton from '@/components/ui/base-button.vue'
 import ImagePreview from './image-preview.vue'
-import { Copy, Download, Grid3x3, Film, Languages, AlertCircle } from 'lucide-vue-next'
+import ScoreCard from './score-card.vue'
+import { Grid3x3, Film, Languages, AlertCircle, BarChart3 } from 'lucide-vue-next'
+import ExportMenu from './export-menu.vue'
 import { useScriptExport } from '@/composables/use-script-export'
 import { useStoryboardGrid } from '@/composables/use-storyboard-grid'
 import { useShotImage } from '@/composables/use-shot-image'
+import { useScriptScore } from '@/composables/use-script-score'
 import { useImageStore } from '@/stores/image-store'
 import { parseFrames } from '@/services/helpers/frame-parser'
 import { useToast } from '@/composables/use-toast'
@@ -18,26 +21,23 @@ const props = defineProps<{
 
 const scriptKey = computed(() => String(props.messageTimestamp))
 
-const { copyScript, downloadScript, convertToSeedance } = useScriptExport()
+const { convertToSeedance } = useScriptExport()
 const { gridImage, loading: gridLoading, error: gridError, generateGrid } = useStoryboardGrid(scriptKey.value)
 const imageStore = useImageStore()
 const { showToast } = useToast()
 
-const copied = ref(false)
+const { loading: scoreLoading, score, scoreScript } = useScriptScore()
+
 const seedanceLoading = ref(false)
 const shotBatchLoading = ref(false)
 const gridPreviewOpen = ref(false)
 
-async function handleCopy() {
-  const ok = await copyScript(props.scriptText)
-  if (ok) {
-    copied.value = true
-    setTimeout(() => (copied.value = false), 1500)
+async function handleScore() {
+  if (scoreLoading.value) return
+  await scoreScript(props.scriptText)
+  if (score.value) {
+    showToast('脚本评分完成', 'success')
   }
-}
-
-function handleDownload() {
-  downloadScript(props.scriptText, props.gameName)
 }
 
 async function handleGridGenerate() {
@@ -83,24 +83,7 @@ async function handleSeedance() {
   <div class="space-y-2 pt-2">
     <!-- 操作按钮 -->
     <div class="flex flex-wrap items-center gap-1.5">
-      <BaseButton
-        variant="ghost"
-        size="sm"
-        class="h-7 px-2 text-xs"
-        @click="handleCopy"
-      >
-        <Copy :size="12" />
-        {{ copied ? '已复制' : '复制脚本' }}
-      </BaseButton>
-      <BaseButton
-        variant="ghost"
-        size="sm"
-        class="h-7 px-2 text-xs"
-        @click="handleDownload"
-      >
-        <Download :size="12" />
-        下载脚本
-      </BaseButton>
+      <ExportMenu :script-text="props.scriptText" :game-name="gameName" />
 
       <span class="mx-0.5 h-4 w-px bg-border/60" />
 
@@ -140,6 +123,20 @@ async function handleSeedance() {
         <Languages v-if="!seedanceLoading" :size="12" />
         转为Seedance提示词
       </BaseButton>
+
+      <span class="mx-0.5 h-4 w-px bg-border/60" />
+
+      <BaseButton
+        variant="outline"
+        size="sm"
+        class="h-7 px-2 text-xs"
+        :loading="scoreLoading"
+        :disabled="scoreLoading"
+        @click="handleScore"
+      >
+        <BarChart3 v-if="!scoreLoading" :size="12" />
+        {{ score ? '重新评分' : 'AI 评分' }}
+      </BaseButton>
     </div>
 
     <!-- 九宫格生图错误提示 -->
@@ -150,6 +147,9 @@ async function handleSeedance() {
       <AlertCircle :size="12" />
       {{ gridError }}
     </div>
+
+    <!-- 评分卡片 -->
+    <ScoreCard v-if="score || scoreLoading" :score="score" :loading="scoreLoading" />
 
     <!-- 九宫格结果预览 -->
     <div v-if="gridImage" class="rounded-md border border-border/40 bg-muted/20 p-2">

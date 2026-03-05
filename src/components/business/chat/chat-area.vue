@@ -2,18 +2,23 @@
 import { ref, computed, watch, nextTick } from 'vue'
 import { AlertCircle } from 'lucide-vue-next'
 import { useChatStore } from '@/stores/chat-store'
+import { useVariantStore } from '@/stores/variant-store'
 import { GenerationStatus } from '@/models/enums'
 import { useVideoAnalysis } from '@/composables/use-video-analysis'
 import EmptyState from './empty-state.vue'
 import MessageBubble from './message-bubble.vue'
+import VariantResults from './variant-results.vue'
 import TypingIndicator from './typing-indicator.vue'
 
 const emit = defineEmits<{
   'open-settings': []
   'open-game-manager': []
+  'apply-template': [template: import('@/models/types').ScriptTemplate | import('@/models/types').UserTemplate]
+  'open-templates': []
 }>()
 
 const chatStore = useChatStore()
+const variantStore = useVariantStore()
 const { analyzing, progress } = useVideoAnalysis()
 const scrollContainer = ref<HTMLElement | null>(null)
 const userNearBottom = ref(true)
@@ -88,6 +93,8 @@ function handleOpenGameManager() {
       <EmptyState
         @open-settings="handleOpenSettings"
         @open-game-manager="handleOpenGameManager"
+        @apply-template="(tpl) => emit('apply-template', tpl)"
+        @open-templates="emit('open-templates')"
       />
     </div>
     <div
@@ -101,6 +108,11 @@ function handleOpenGameManager() {
           v-for="(msg, idx) in chatStore.messages"
           :key="idx"
           :message="msg"
+        />
+        <VariantResults
+          v-if="variantStore.hasVariants"
+          :variants="variantStore.variants"
+          @select="variantStore.selectVariant($event)"
         />
         <TypingIndicator v-if="showTyping" :label="typingLabel" :stages="typingStages" />
         <div

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { CheckSquare, Square, ChevronDown } from 'lucide-vue-next'
-import BaseBadge from '@/components/ui/base-badge.vue'
 import type { PresetTheme, ThemeTopic, CustomTheme } from '@/models/types'
 
 const props = withDefaults(
@@ -38,11 +37,6 @@ const description = () => {
   return (props.theme as CustomTheme).description
 }
 
-const tier = () => {
-  if (!isPresetTheme(props.theme)) return null
-  return (props.theme as PresetTheme).tier
-}
-
 function handleClick() {
   emit('toggle')
 }
@@ -51,82 +45,68 @@ function handleClick() {
 <template>
   <div
     :class="[
-      'cursor-pointer rounded-lg border p-3 transition-colors',
+      'cursor-pointer rounded-md px-2 py-1.5 transition-colors',
       selected
-        ? 'border-brand bg-brand/5'
-        : 'border-border hover:border-border/80'
+        ? 'bg-brand/8 text-foreground'
+        : 'hover:bg-muted/60'
     ]"
     role="button"
     tabindex="0"
     @click="handleClick"
     @keydown.enter.space.prevent="handleClick"
   >
-    <div class="flex items-start gap-2">
+    <div class="flex items-center gap-2">
       <component
         :is="selected ? CheckSquare : Square"
-        :size="18"
-        class="mt-0.5 shrink-0"
-        :class="selected ? 'text-brand' : 'text-muted-foreground'"
+        :size="15"
+        class="shrink-0"
+        :class="selected ? 'text-brand' : 'text-muted-foreground/50'"
       />
       <div class="min-w-0 flex-1">
-        <div class="flex flex-wrap items-center gap-1.5">
-          <span class="font-medium text-sm">{{ theme.name }}</span>
-          <BaseBadge
-            v-if="tier()"
-            :variant="
-              tier() === 'T1'
-                ? 'destructive'
-                : tier() === 'T2'
-                  ? 'secondary'
-                  : 'outline'
-            "
-          >
-            {{ tier() }}
-          </BaseBadge>
+        <div class="flex items-center gap-1.5">
+          <span class="truncate text-xs font-medium">{{ theme.name }}</span>
         </div>
-        <p class="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
+        <p class="mt-0.5 truncate text-[11px] text-muted-foreground">
           {{ description() }}
         </p>
-        <div v-if="hasDetails()" class="mt-2">
-          <button
-            type="button"
-            class="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-            @click.stop="expanded = !expanded"
+      </div>
+      <button
+        v-if="hasDetails()"
+        type="button"
+        class="shrink-0 rounded p-0.5 text-muted-foreground/50 hover:text-foreground"
+        @click.stop="expanded = !expanded"
+      >
+        <ChevronDown
+          :size="13"
+          :class="['transition-transform', expanded && 'rotate-180']"
+        />
+      </button>
+    </div>
+    <div
+      v-if="expanded && isThemeTopic(theme)"
+      class="mt-1.5 ml-[23px] space-y-1.5 rounded bg-muted/40 p-2 text-[11px]"
+    >
+      <div v-if="(theme as ThemeTopic).hooks?.length">
+        <p class="font-medium text-muted-foreground">钩子套路</p>
+        <ul class="mt-0.5 list-inside list-disc space-y-0.5">
+          <li
+            v-for="(h, i) in (theme as ThemeTopic).hooks"
+            :key="i"
           >
-            <ChevronDown
-              :class="['transition-transform', expanded && 'rotate-180']"
-              :size="14"
-            />
-            {{ expanded ? '收起' : '展开详情' }}
-          </button>
-          <div
-            v-if="expanded && isThemeTopic(theme)"
-            class="mt-2 space-y-2 rounded border border-border/50 bg-muted/30 p-2 text-xs"
+            {{ h }}
+          </li>
+        </ul>
+      </div>
+      <div v-if="(theme as ThemeTopic).cases?.length">
+        <p class="font-medium text-muted-foreground">案例</p>
+        <ul class="mt-0.5 list-inside list-disc space-y-0.5">
+          <li
+            v-for="(c, i) in (theme as ThemeTopic).cases"
+            :key="i"
           >
-            <div v-if="(theme as ThemeTopic).hooks?.length">
-              <p class="font-medium text-muted-foreground">钩子套路</p>
-              <ul class="mt-1 list-inside list-disc space-y-0.5">
-                <li
-                  v-for="(h, i) in (theme as ThemeTopic).hooks"
-                  :key="i"
-                >
-                  {{ h }}
-                </li>
-              </ul>
-            </div>
-            <div v-if="(theme as ThemeTopic).cases?.length">
-              <p class="font-medium text-muted-foreground">案例</p>
-              <ul class="mt-1 list-inside list-disc space-y-0.5">
-                <li
-                  v-for="(c, i) in (theme as ThemeTopic).cases"
-                  :key="i"
-                >
-                  {{ c }}
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
+            {{ c }}
+          </li>
+        </ul>
       </div>
     </div>
   </div>

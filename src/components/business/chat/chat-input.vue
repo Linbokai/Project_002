@@ -5,7 +5,9 @@ import BaseButton from '@/components/ui/base-button.vue'
 import BaseSelect from '@/components/ui/base-select.vue'
 import VideoMetricsDialog from './video-metrics-dialog.vue'
 import { Send, Sparkles, Video, Settings2, ChevronUp } from 'lucide-vue-next'
+import VariantSelector from './variant-selector.vue'
 import { useChat } from '@/composables/use-chat'
+import { useVariantStore } from '@/stores/variant-store'
 import { useVideoAnalysis } from '@/composables/use-video-analysis'
 import { useModelStatus } from '@/composables/use-model-status'
 import { useConfigStore } from '@/stores/config-store'
@@ -18,6 +20,7 @@ import { SEARCH_MODELS, GEN_MODELS, VISION_MODELS } from '@/constants/model-opti
 const { sendMessage, generateScript, isGenerating } = useChat()
 const { analyzeVideo, analyzing, progress } = useVideoAnalysis()
 const { searchStatus, genStatus, visionStatus } = useModelStatus()
+const variantStore = useVariantStore()
 const configStore = useConfigStore()
 const gameStore = useGameStore()
 const settingsStore = useSettingsStore()
@@ -201,6 +204,9 @@ async function handleVideoSubmit(file: File, metrics?: VideoMetrics) {
           <Sparkles v-if="!isGenerating" :size="14" />
           {{ generateLabel }}
         </BaseButton>
+        <VariantSelector
+          v-model:count="variantStore.variantCount"
+        />
         <BaseButton
           variant="outline"
           size="sm"
