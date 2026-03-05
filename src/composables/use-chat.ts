@@ -7,6 +7,7 @@ import { useHistoryStore } from '@/stores/history-store'
 import { useImageStore } from '@/stores/image-store'
 import { useThemeRadarStore } from '@/stores/theme-radar-store'
 import { useGameplayRadarStore } from '@/stores/gameplay-radar-store'
+import { usePromptStore } from '@/stores/prompt-store'
 import { streamChat } from '@/services/api/openrouter-api'
 import { buildSystemPrompt } from '@/services/helpers/script-prompt-builder'
 import { SCRIPT_TYPES } from '@/constants/script-types'
@@ -33,6 +34,7 @@ export function useChat() {
   const imageStore = useImageStore()
   const themeRadarStore = useThemeRadarStore()
   const gameplayRadarStore = useGameplayRadarStore()
+  const promptStore = usePromptStore()
   const { showToast } = useToast()
 
   function saveSession() {
@@ -72,9 +74,10 @@ export function useChat() {
 
     const genConfig = unref(configStore.config)
     const currentGame = unref(gameStore.currentGame)
+    const scriptTypeConfig = promptStore.getEffectiveConfig(genConfig.scriptType)
     const systemPrompt = genConfig.direction === ProductionDirection.UeGameplay
       ? buildUeSystemPrompt(genConfig, currentGame)
-      : buildSystemPrompt(genConfig, currentGame)
+      : buildSystemPrompt(genConfig, currentGame, undefined, scriptTypeConfig)
     chatStore.addMessage({
       role: 'user',
       content: userText,

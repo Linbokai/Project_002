@@ -1,4 +1,4 @@
-import type { MessageType } from '@/models/enums'
+import type { MessageType, ScriptType } from '@/models/enums'
 
 export interface ChatMessage {
   role: 'user' | 'assistant' | 'system'
@@ -24,4 +24,7 @@ export interface ChatSession {
   themes: string
   preview: string
   createdAt: number
+  scriptType?: ScriptType
+  rating?: 1 | 2 | 3
+  ratingNote?: string
 }
