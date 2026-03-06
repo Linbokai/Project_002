@@ -5,8 +5,10 @@ import {
   filterModelsByTask,
   scoreModels,
   pickBestModel,
+  getTopModels,
 } from '@/services/helpers/model-scorer'
 import { API_DEFAULTS } from '@/constants'
+import { TASK_MODEL_OPTIONS } from '@/constants/model-options'
 import type { TaskType, RoutingProfile } from '@/models/types'
 
 const TASK_TYPES: TaskType[] = ['search', 'gen', 'vision', 'image']
@@ -33,7 +35,8 @@ export function useModelRouting() {
       const models = await fetchAvailableModels(apiKey)
       routingStore.setCachedModels(models)
       recalculateRouting()
-    } catch {
+    } catch (err) {
+      console.error('[ModelRouting] 自动路由刷新失败，使用默认模型:', err)
       routingStore.setResolvedModels({ ...FALLBACK_MODELS })
     } finally {
       routingStore.setLoading(false)
@@ -68,9 +71,35 @@ export function useModelRouting() {
     return routingStore.resolvedModels[task] || FALLBACK_MODELS[task]
   }
 
+  function getFallbackChain(task: TaskType, count: number = 3): string[] {
+    const failedIds = routingStore.getFailedModelIds()
+    const profile = settingsStore.config.routingProfile
+
+    if (routingStore.cachedModels.length > 0) {
+      const chain = getTopModels(
+        routingStore.cachedModels,
+        task,
+        profile,
+        failedIds,
+        count,
+      )
+      if (chain.length > 0) {
+        if (chain.length < count && !chain.includes(FALLBACK_MODELS[task])) {
+          chain.push(FALLBACK_MODELS[task])
+        }
+        return chain
+      }
+    }
+
+    const allOptions = TASK_MODEL_OPTIONS[task]
+    const filtered = allOptions.filter((id) => !failedIds.includes(id))
+    return filtered.length > 0 ? filtered.slice(0, count) : [FALLBACK_MODELS[task]]
+  }
+
   return {
     refreshModels,
     recalculateRouting,
     resolveModel,
+    getFallbackChain,
   }
 }

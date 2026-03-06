@@ -12,6 +12,8 @@ export const STORAGE_KEYS = {
   PROMPT_OVERRIDES: 'sg_prompt_overrides',
   USER_TEMPLATES: 'sg_user_templates',
   ONBOARDING_DONE: 'sg_onboarding_done',
+  TRIAL_MODE: 'sg_trial_mode',
+  TRIAL_USAGE: 'sg_trial_usage',
 } as const
 
 export const HISTORY_MAX = 30

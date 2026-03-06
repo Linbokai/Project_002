@@ -8,6 +8,8 @@ export interface ImageGenerationOptions {
   imageConfig: ImageConfig
   systemPrompt?: string
   referenceImages?: string[]
+  fallbackModels?: string[]
+  onModelFallback?: (failedModel: string, nextModel: string) => void
 }
 
 export interface ImageGenerationResult {
@@ -15,11 +17,11 @@ export interface ImageGenerationResult {
   text?: string
 }
 
-export async function generateImage(
+function buildImageBody(
+  model: string,
   options: ImageGenerationOptions,
-): Promise<ImageGenerationResult> {
-  const { apiKey, model, prompt, imageConfig, systemPrompt, referenceImages } = options
-
+): Record<string, unknown> {
+  const { prompt, imageConfig, systemPrompt, referenceImages } = options
   const messages: Array<Record<string, unknown>> = []
 
   if (systemPrompt) {
@@ -27,20 +29,15 @@ export async function generateImage(
   }
 
   const userContent: Array<Record<string, unknown>> = []
-
   if (referenceImages?.length) {
     for (const imgUrl of referenceImages) {
-      userContent.push({
-        type: 'image_url',
-        image_url: { url: imgUrl },
-      })
+      userContent.push({ type: 'image_url', image_url: { url: imgUrl } })
     }
   }
-
   userContent.push({ type: 'text', text: prompt })
   messages.push({ role: 'user', content: userContent })
 
-  const body: Record<string, unknown> = {
+  return {
     model,
     messages,
     modalities: ['image', 'text'],
@@ -50,15 +47,16 @@ export async function generateImage(
       image_size: imageConfig.image_size,
     },
   }
+}
 
-  const response = await openRouterFetch(apiKey, body)
-  const data = await response.json()
-
-  const message = data.choices?.[0]?.message
+function parseImageResponse(data: Record<string, unknown>): ImageGenerationResult {
+  const message = (data as { choices?: Array<{ message?: Record<string, unknown> }> })
+    .choices?.[0]?.message
   const images: Array<{ url: string }> = []
 
-  if (message?.images?.length) {
-    for (const img of message.images) {
+  const rawImages = message?.images as Array<{ image_url?: { url?: string } }> | undefined
+  if (rawImages?.length) {
+    for (const img of rawImages) {
       const url = img?.image_url?.url
       if (url) images.push({ url })
     }
@@ -66,6 +64,33 @@ export async function generateImage(
 
   return {
     images,
-    text: message?.content ?? undefined,
+    text: (message?.content as string) ?? undefined,
   }
+}
+
+export async function generateImage(
+  options: ImageGenerationOptions,
+): Promise<ImageGenerationResult> {
+  const { apiKey, fallbackModels } = options
+  const modelsToTry = [options.model, ...(fallbackModels ?? [])]
+
+  for (let i = 0; i < modelsToTry.length; i++) {
+    const currentModel = modelsToTry[i]!
+    const isLast = i === modelsToTry.length - 1
+
+    try {
+      const body = buildImageBody(currentModel, options)
+      const response = await openRouterFetch(apiKey, body)
+      const data = await response.json()
+      return parseImageResponse(data)
+    } catch (e) {
+      if (!isLast) {
+        options.onModelFallback?.(currentModel, modelsToTry[i + 1]!)
+        continue
+      }
+      throw e
+    }
+  }
+
+  throw new Error('所有候选图像模型均不可用')
 }

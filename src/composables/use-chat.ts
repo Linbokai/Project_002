@@ -3,10 +3,6 @@ import { useChatStore } from '@/stores/chat-store'
 import { useConfigStore } from '@/stores/config-store'
 import { useGameStore } from '@/stores/game-store'
 import { useSettingsStore } from '@/stores/settings-store'
-import { useHistoryStore } from '@/stores/history-store'
-import { useImageStore } from '@/stores/image-store'
-import { useThemeRadarStore } from '@/stores/theme-radar-store'
-import { useGameplayRadarStore } from '@/stores/gameplay-radar-store'
 import { usePromptStore } from '@/stores/prompt-store'
 import { useVariantStore } from '@/stores/variant-store'
 import { streamChat } from '@/services/api/openrouter-api'
@@ -20,6 +16,8 @@ import {
 } from '@/services/helpers/gameplay-prompt-builder'
 import { GenerationStatus, MessageType, ProductionDirection, UeContentType } from '@/models/enums'
 import { useToast } from '@/composables/use-toast'
+import { useSessionPersistence } from '@/composables/use-session-persistence'
+import { useResolvedModel } from '@/composables/use-resolved-model'
 
 const QUICK_ACTION_PROMPTS: Record<string, string> = {
   reroll: '换个完全不同的创意方向，重新生成脚本',
@@ -32,36 +30,11 @@ export function useChat() {
   const configStore = useConfigStore()
   const gameStore = useGameStore()
   const settingsStore = useSettingsStore()
-  const historyStore = useHistoryStore()
-  const imageStore = useImageStore()
-  const themeRadarStore = useThemeRadarStore()
-  const gameplayRadarStore = useGameplayRadarStore()
   const promptStore = usePromptStore()
   const variantStore = useVariantStore()
   const { showToast } = useToast()
-
-  function saveSession() {
-    const msgs = [...chatStore.messages]
-    if (msgs.length === 0) return
-
-    const gameName = gameStore.currentGame?.name ?? ''
-    const isUe = configStore.config.direction === ProductionDirection.UeGameplay
-    const themes = isUe
-      ? gameplayRadarStore.getAllSelectedNames().join('、')
-      : themeRadarStore.getAllSelectedNames().join('、')
-    const firstUser = msgs.find((m) => m.role === 'user')
-    const preview = firstUser?.content.slice(0, 80) ?? ''
-
-    if (chatStore.currentSessionId) {
-      historyStore.updateSession(chatStore.currentSessionId, { messages: msgs, preview, themes })
-      imageStore.persistToSession(chatStore.currentSessionId)
-    } else {
-      const id = historyStore.addSession({ messages: msgs, gameName, themes, preview })
-      chatStore.currentSessionId = id
-      imageStore.bindSession(id)
-      imageStore.persistToSession(id)
-    }
-  }
+  const { saveSession } = useSessionPersistence()
+  const { withFallback } = useResolvedModel()
 
   const isGenerating = computed(
     () => chatStore.status === GenerationStatus.Generating,
@@ -97,7 +70,7 @@ export function useChat() {
     await streamChat(
       {
         config,
-        model: settingsStore.getModelForTask('gen'),
+        ...withFallback('gen'),
         messages,
       },
       {
@@ -176,7 +149,7 @@ export function useChat() {
       return streamChat(
         {
           config,
-          model: settingsStore.getModelForTask('gen'),
+          ...withFallback('gen'),
           messages,
         },
         {
@@ -233,7 +206,7 @@ export function useChat() {
     await streamChat(
       {
         config,
-        model: settingsStore.getModelForTask('gen'),
+        ...withFallback('gen'),
         messages,
       },
       {
@@ -286,7 +259,7 @@ export function useChat() {
     await streamChat(
       {
         config,
-        model: settingsStore.getModelForTask('gen'),
+        ...withFallback('gen'),
         messages,
       },
       {

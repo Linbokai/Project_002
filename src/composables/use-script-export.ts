@@ -6,6 +6,7 @@ import { chatCompletion } from '@/services/api/openrouter-api'
 import { useSettingsStore } from '@/stores/settings-store'
 import { useChatStore } from '@/stores/chat-store'
 import { MessageType } from '@/models/enums'
+import { useResolvedModel } from '@/composables/use-resolved-model'
 
 function formatExportFilename(gameName: string): string {
   const safe = (gameName || '脚本').replace(/[<>:"/\\|?*]/g, '_')
@@ -25,6 +26,7 @@ function downloadBlob(blob: Blob, filename: string): void {
 export function useScriptExport() {
   const settingsStore = useSettingsStore()
   const chatStore = useChatStore()
+  const { withFallback } = useResolvedModel()
 
   async function copyScript(text: string): Promise<boolean> {
     return copyToClipboard(text)
@@ -56,7 +58,7 @@ export function useScriptExport() {
       const prompt = buildSeedancePrompt(script, lang, false)
       const response = await chatCompletion({
         config,
-        model: settingsStore.getModelForTask('gen'),
+        ...withFallback('gen'),
         messages: [{ role: 'user', content: prompt }],
         stream: false,
       })

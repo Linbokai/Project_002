@@ -4,47 +4,26 @@ import { useSettingsStore } from '@/stores/settings-store'
 import { useConfigStore } from '@/stores/config-store'
 import { useGameStore } from '@/stores/game-store'
 import { generateImage } from '@/services/api/image-api'
-import { chatCompletion } from '@/services/api/openrouter-api'
-import { buildVisualContextExtractionPrompt } from '@/services/helpers/visual-context-builder'
 import {
   buildStoryboardGridSystemPrompt,
   buildStoryboardGridPrompt,
 } from '@/services/helpers/storyboard-prompt-builder'
 import { parseFrames } from '@/services/helpers/frame-parser'
 import type { ScriptKey, ImageConfig } from '@/models/types'
+import { useVisualContext } from '@/composables/use-visual-context'
+import { useResolvedModel } from '@/composables/use-resolved-model'
 
 export function useStoryboardGrid(scriptKey: ScriptKey) {
   const imageStore = useImageStore()
   const settingsStore = useSettingsStore()
   const configStore = useConfigStore()
   const gameStore = useGameStore()
+  const { ensureVisualContext } = useVisualContext(scriptKey)
+  const { withFallback } = useResolvedModel()
 
   const gridImage = computed(() => imageStore.getGridImage(scriptKey))
   const loading = computed(() => imageStore.isGridLoading(scriptKey))
   const error = computed(() => imageStore.getGridError(scriptKey))
-
-  async function ensureVisualContext(scriptText: string): Promise<string> {
-    const existing = imageStore.getContext(scriptKey)
-    if (existing) return existing.text
-
-    imageStore.setContextLoading(scriptKey, true)
-    try {
-      const prompt = buildVisualContextExtractionPrompt(scriptText)
-      const result = await chatCompletion({
-        config: settingsStore.config,
-        model: settingsStore.getModelForTask('gen'),
-        messages: [{ role: 'user', content: prompt }],
-        stream: false,
-        temperature: 0.3,
-      })
-
-      const ctx = { text: result, extractedAt: Date.now(), isEdited: false }
-      imageStore.setContext(scriptKey, ctx)
-      return result
-    } finally {
-      imageStore.setContextLoading(scriptKey, false)
-    }
-  }
 
   async function generateGrid(scriptContent: string): Promise<void> {
     if (imageStore.isGridLoading(scriptKey)) return
@@ -79,9 +58,10 @@ export function useStoryboardGrid(scriptKey: ScriptKey) {
         image_size: '2K',
       }
 
+      const imageFb = withFallback('image')
       const result = await generateImage({
         apiKey: settingsStore.config.openRouterKey,
-        model: settingsStore.getModelForTask('image'),
+        ...imageFb,
         prompt,
         imageConfig,
         systemPrompt,
@@ -92,7 +72,7 @@ export function useStoryboardGrid(scriptKey: ScriptKey) {
         imageStore.setGridImage(scriptKey, {
           url: result.images[0]!.url,
           prompt: `九宫格分镜概览 (${shots.length} 镜头)`,
-          model: settingsStore.getModelForTask('image'),
+          model: imageFb.model,
           createdAt: Date.now(),
         })
         imageStore.persistToSession()

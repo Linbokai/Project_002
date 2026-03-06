@@ -100,3 +100,28 @@ export function pickBestModel(
 
   return ranked[0]?.id ?? ''
 }
+
+export function getTopModels(
+  allModels: OpenRouterModelInfo[],
+  task: TaskType,
+  profile: RoutingProfile,
+  failedModelIds: string[] = [],
+  count: number = 3,
+): string[] {
+  const filtered = filterModelsByTask(allModels, task)
+  if (filtered.length === 0) return []
+
+  const scored = filtered.map((m) => {
+    const costPer1M = computeCostPer1M(m)
+    let qualityScore =
+      getQualityScore(m.id, task) || estimateQualityFromCost(costPer1M)
+    if (failedModelIds.includes(m.id)) qualityScore *= 0.1
+    return {
+      id: m.id,
+      finalScore: computeFinalScore(qualityScore, costPer1M, profile),
+    }
+  })
+
+  scored.sort((a, b) => b.finalScore - a.finalScore)
+  return scored.slice(0, count).map((s) => s.id)
+}

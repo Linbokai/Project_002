@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import type { ChatSession } from '@/models/types'
+import type { ChatSession, ScriptVersion } from '@/models/types'
 import { STORAGE_KEYS, HISTORY_MAX } from '@/constants'
 import { getItem, setItem, generateId } from '@/utils'
 import { deleteSessionImages, clearAllSessionImages } from '@/utils/image-db'
@@ -54,5 +54,27 @@ export const useHistoryStore = defineStore('history', () => {
     return sessions.value.find((s) => s.id === id)
   }
 
-  return { sessions, addSession, updateSession, removeSession, clearAll, getSession }
+  function addVersion(sessionId: string, content: string, label: string, parentId?: string): string | null {
+    const session = sessions.value.find((s) => s.id === sessionId)
+    if (!session) return null
+    if (!session.versions) session.versions = []
+
+    const version: ScriptVersion = {
+      id: generateId(),
+      content,
+      label,
+      createdAt: Date.now(),
+      parentId,
+    }
+    session.versions.push(version)
+    persist()
+    return version.id
+  }
+
+  function getVersions(sessionId: string): ScriptVersion[] {
+    const session = sessions.value.find((s) => s.id === sessionId)
+    return session?.versions ?? []
+  }
+
+  return { sessions, addSession, updateSession, removeSession, clearAll, getSession, addVersion, getVersions }
 })

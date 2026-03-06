@@ -2,20 +2,16 @@ import { ref, unref } from 'vue'
 import { chatCompletion, streamChat } from '@/services/api/openrouter-api'
 import { useSettingsStore } from '@/stores/settings-store'
 import { useChatStore } from '@/stores/chat-store'
-import { useConfigStore } from '@/stores/config-store'
-import { useGameStore } from '@/stores/game-store'
-import { useHistoryStore } from '@/stores/history-store'
-import { useImageStore } from '@/stores/image-store'
-import { useThemeRadarStore } from '@/stores/theme-radar-store'
-import { useGameplayRadarStore } from '@/stores/gameplay-radar-store'
 import {
   buildScoreSystemPrompt,
   buildScoreUserPrompt,
 } from '@/services/helpers/score-prompt-builder'
 import type { ScriptScore, ScoreDimension } from '@/models/types/score'
 import { SCORE_DIMENSIONS } from '@/models/types/score'
-import { MessageType, ProductionDirection } from '@/models/enums'
+import { MessageType } from '@/models/enums'
 import { useToast } from '@/composables/use-toast'
+import { useSessionPersistence } from '@/composables/use-session-persistence'
+import { useResolvedModel } from '@/composables/use-resolved-model'
 
 function extractJson(raw: string): string {
   const fenceMatch = raw.match(/```(?:json)?\s*([\s\S]*?)```/)
@@ -69,10 +65,11 @@ ${original}
 ${suggestions.map((s, i) => `${i + 1}. ${s}`).join('\n')}
 
 ## 要求
-1. 保持原脚本的整体结构和长度
-2. 针对以上每个建议进行具体优化
-3. 用【已优化】标注你改动的部分
-4. 最后简要说明你做了哪些改动
+1. 保持原脚本完全相同的分镜/段落数量和结构，禁止拆分或合并段落
+2. 保持原脚本完全相同的格式标记（如【】、时间轴等），不要添加额外的方括号标记
+3. 针对以上每个建议进行具体优化
+4. 在改动的字段末尾用 ✅ 标注
+5. 脚本输出完毕后，用 --- 分隔，再简要说明你做了哪些改动
 
 请输出优化后的完整脚本：`
 }
@@ -83,34 +80,9 @@ export function useScriptScore() {
   const score = ref<ScriptScore | null>(null)
   const chatStore = useChatStore()
   const settingsStore = useSettingsStore()
-  const configStore = useConfigStore()
-  const gameStore = useGameStore()
-  const historyStore = useHistoryStore()
-  const imageStore = useImageStore()
-  const themeRadarStore = useThemeRadarStore()
-  const gameplayRadarStore = useGameplayRadarStore()
   const { showToast } = useToast()
-
-  function saveSession() {
-    const msgs = [...chatStore.messages]
-    if (msgs.length === 0) return
-    const gameName = unref(gameStore.currentGame)?.name ?? ''
-    const isUe = unref(configStore.config).direction === ProductionDirection.UeGameplay
-    const themes = isUe
-      ? gameplayRadarStore.getAllSelectedNames().join('、')
-      : themeRadarStore.getAllSelectedNames().join('、')
-    const firstUser = msgs.find((m) => m.role === 'user')
-    const preview = firstUser?.content.slice(0, 80) ?? ''
-    if (chatStore.currentSessionId) {
-      historyStore.updateSession(chatStore.currentSessionId, { messages: msgs, preview, themes })
-      imageStore.persistToSession(chatStore.currentSessionId)
-    } else {
-      const id = historyStore.addSession({ messages: msgs, gameName, themes, preview })
-      chatStore.currentSessionId = id
-      imageStore.bindSession(id)
-      imageStore.persistToSession(id)
-    }
-  }
+  const { saveSession } = useSessionPersistence()
+  const { withFallback } = useResolvedModel()
 
   async function scoreScript(scriptContent: string): Promise<void> {
     if (!scriptContent.trim()) {
@@ -126,7 +98,7 @@ export function useScriptScore() {
       const settings = useSettingsStore()
       const raw = await chatCompletion({
         config: settings.config,
-        model: settings.getModelForTask('gen'),
+        ...withFallback('gen'),
         messages: [
           { role: 'system', content: buildScoreSystemPrompt() },
           { role: 'user', content: buildScoreUserPrompt(scriptContent) },
@@ -177,8 +149,8 @@ export function useScriptScore() {
       showToast('请先配置 API Key', 'destructive')
       return
     }
-    const model = settingsStore.getModelForTask('gen')
-    if (!model) {
+    const fb = withFallback('gen')
+    if (!fb.model) {
       showToast('请先选择生成模型', 'destructive')
       return
     }
@@ -195,7 +167,7 @@ export function useScriptScore() {
     await streamChat(
       {
         config,
-        model,
+        ...fb,
         messages: [{ role: 'user', content: prompt }],
       },
       {

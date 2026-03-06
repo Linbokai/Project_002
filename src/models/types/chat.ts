@@ -17,6 +17,14 @@ export interface VideoMetrics {
   completionRate?: number
 }
 
+export interface ScriptVersion {
+  id: string
+  content: string
+  label: string
+  createdAt: number
+  parentId?: string
+}
+
 export interface ChatSession {
   id: string
   messages: ChatMessage[]
@@ -27,4 +35,5 @@ export interface ChatSession {
   scriptType?: ScriptType
   rating?: 1 | 2 | 3
   ratingNote?: string
+  versions?: ScriptVersion[]
 }

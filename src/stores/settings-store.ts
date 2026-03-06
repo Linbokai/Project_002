@@ -3,7 +3,6 @@ import { ref, computed } from 'vue'
 import type { ApiConfig, TaskType } from '@/models/types'
 import { STORAGE_KEYS, API_DEFAULTS } from '@/constants'
 import { getItem, setItem } from '@/utils'
-import { useModelRoutingStore } from './model-routing-store'
 
 export type { TaskType } from '@/models/types'
 
@@ -20,8 +19,8 @@ export const useSettingsStore = defineStore('settings', () => {
     }),
   )
 
-  const trialMode = ref(getItem<boolean>('sg_trial_mode', false))
-  const trialUsageCount = ref(getItem<number>('sg_trial_usage', 0))
+  const trialMode = ref(getItem<boolean>(STORAGE_KEYS.TRIAL_MODE, false))
+  const trialUsageCount = ref(getItem<number>(STORAGE_KEYS.TRIAL_USAGE, 0))
   const TRIAL_MAX = 5
 
   const hasApiKey = computed(() => config.value.openRouterKey.length > 0)
@@ -34,17 +33,13 @@ export const useSettingsStore = defineStore('settings', () => {
     setItem(STORAGE_KEYS.API_CONFIG, config.value)
   }
 
-  function getModelForTask(task: TaskType): string {
-    if (config.value.routingMode === 'auto') {
-      const routingStore = useModelRoutingStore()
-      const resolved = routingStore.resolvedModels[task]
-      if (resolved) return resolved
-    }
+  function getManualModel(task: TaskType): string {
     switch (task) {
       case 'search': return config.value.searchModel
       case 'gen': return config.value.genModel
       case 'vision': return config.value.visionModel
       case 'image': return config.value.imageModel
+      default: return config.value.genModel
     }
   }
 
@@ -60,24 +55,24 @@ export const useSettingsStore = defineStore('settings', () => {
 
   function enableTrialMode() {
     trialMode.value = true
-    setItem('sg_trial_mode', true)
+    setItem(STORAGE_KEYS.TRIAL_MODE, true)
   }
 
   function consumeTrial() {
     trialUsageCount.value++
-    setItem('sg_trial_usage', trialUsageCount.value)
+    setItem(STORAGE_KEYS.TRIAL_USAGE, trialUsageCount.value)
   }
 
   function disableTrialMode() {
     trialMode.value = false
-    setItem('sg_trial_mode', false)
+    setItem(STORAGE_KEYS.TRIAL_MODE, false)
   }
 
   return {
     config,
     hasApiKey,
     updateConfig,
-    getModelForTask,
+    getManualModel,
     updateModel,
     isTrialMode,
     trialRemaining,
