@@ -8,6 +8,7 @@ export interface Game {
   launchedPlatforms?: string
   historicalHits?: string
   gameAssets?: GameAsset[]
+  performanceHistory?: PerformanceRecord[]
 }
 
 export interface GameAsset {
@@ -16,4 +17,15 @@ export interface GameAsset {
   name: string
   url?: string
   addedAt: number
+}
+
+export interface PerformanceRecord {
+  id: string
+  roi?: number
+  ctr?: number
+  cvr?: number
+  spend?: number
+  date: number
+  scriptId?: string
+  note?: string
 }

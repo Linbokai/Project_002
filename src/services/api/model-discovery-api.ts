@@ -12,7 +12,12 @@ export async function fetchAvailableModels(
   })
 
   if (!response.ok) {
-    throw new Error(`获取模型列表失败: HTTP ${response.status}`)
+    let detail = ''
+    try {
+      const body = await response.json()
+      detail = body?.error?.message ?? JSON.stringify(body)
+    } catch { /* ignore parse error */ }
+    throw new Error(`获取模型列表失败: HTTP ${response.status}${detail ? ` — ${detail}` : ''}`)
   }
 
   const json = await response.json()

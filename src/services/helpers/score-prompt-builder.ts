@@ -39,10 +39,29 @@ ${JSON_SCHEMA}
 \`\`\``
 }
 
-export function buildScoreUserPrompt(scriptContent: string): string {
-  return `请对以下短视频脚本进行评分：
+export interface PerformanceContext {
+  roi?: number
+  ctr?: number
+  cvr?: number
+  note?: string
+}
+
+export function buildScoreUserPrompt(scriptContent: string, perfCtx?: PerformanceContext): string {
+  let prompt = `请对以下短视频脚本进行评分：
 
 ---
 ${scriptContent}
 ---`
+
+  if (perfCtx && (perfCtx.roi || perfCtx.ctr || perfCtx.cvr)) {
+    const metrics: string[] = []
+    if (perfCtx.roi) metrics.push(`ROI: ${perfCtx.roi}`)
+    if (perfCtx.ctr) metrics.push(`CTR: ${perfCtx.ctr}%`)
+    if (perfCtx.cvr) metrics.push(`CVR: ${perfCtx.cvr}%`)
+    prompt += `\n\n## 历史投放数据参考\n${metrics.join('、')}`
+    if (perfCtx.note) prompt += `\n备注：${perfCtx.note}`
+    prompt += '\n请结合以上投放数据表现，在评分和建议中给出针对性的优化方向。'
+  }
+
+  return prompt
 }

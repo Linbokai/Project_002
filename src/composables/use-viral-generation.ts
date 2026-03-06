@@ -8,11 +8,13 @@ import {
 } from '@/services/helpers/viral-prompt-builder'
 import { MessageType } from '@/models/enums'
 import { useToast } from '@/composables/use-toast'
+import { useResolvedModel } from '@/composables/use-resolved-model'
 
 export function useViralGeneration() {
   const chatStore = useChatStore()
   const settingsStore = useSettingsStore()
   const { showToast } = useToast()
+  const { withFallback } = useResolvedModel()
 
   const viralDialogOpen = ref(false)
 
@@ -27,8 +29,8 @@ export function useViralGeneration() {
       return
     }
 
-    const model = settingsStore.getModelForTask('gen')
-    if (!model) {
+    const fb = withFallback('gen')
+    if (!fb.model) {
       showToast('请先选择生成模型', 'destructive')
       return
     }
@@ -55,7 +57,7 @@ export function useViralGeneration() {
     await streamChat(
       {
         config,
-        model,
+        ...fb,
         messages,
       },
       {

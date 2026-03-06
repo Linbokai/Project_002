@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { Game } from '@/models/types'
+import type { Game, PerformanceRecord } from '@/models/types'
 import { STORAGE_KEYS } from '@/constants'
 import { getItem, setItem, generateId } from '@/utils'
 
@@ -88,5 +88,18 @@ export const useGameStore = defineStore('game', () => {
     setItem(STORAGE_KEYS.SELECTED_GAME, index)
   }
 
-  return { games, selectedIndex, currentGame, hasGames, addGame, updateGame, removeGame, selectGame }
+  function addPerformanceRecord(gameId: string, record: Omit<PerformanceRecord, 'id'>) {
+    const game = games.value.find((g) => g.id === gameId)
+    if (!game) return
+    if (!game.performanceHistory) game.performanceHistory = []
+    game.performanceHistory.push({ ...record, id: generateId() })
+    persist()
+  }
+
+  function getPerformanceHistory(gameId: string): PerformanceRecord[] {
+    const game = games.value.find((g) => g.id === gameId)
+    return game?.performanceHistory ?? []
+  }
+
+  return { games, selectedIndex, currentGame, hasGames, addGame, updateGame, removeGame, selectGame, addPerformanceRecord, getPerformanceHistory }
 })

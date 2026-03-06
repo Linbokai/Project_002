@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { Sparkles } from 'lucide-vue-next'
+import { Sparkles, Eye, EyeOff, Wallet } from 'lucide-vue-next'
 import BaseDialog from '@/components/ui/base-dialog.vue'
 import BaseButton from '@/components/ui/base-button.vue'
 import BaseInput from '@/components/ui/base-input.vue'
@@ -11,9 +11,10 @@ import { useSettingsStore } from '@/stores/settings-store'
 import { useModelRoutingStore } from '@/stores/model-routing-store'
 import { useModelRouting } from '@/composables/use-model-routing'
 import { testConnection } from '@/services/api/openrouter-api'
+import { fetchKeyInfo } from '@/services/api/openrouter-client'
 import { SEARCH_MODELS, GEN_MODELS, VISION_MODELS, IMAGE_MODELS } from '@/constants/model-options'
 import { useToast } from '@/composables/use-toast'
-import type { ApiConfig, RoutingMode, RoutingProfile, TaskType } from '@/models/types'
+import type { ApiConfig, KeyInfo, RoutingMode, RoutingProfile, TaskType } from '@/models/types'
 
 const props = defineProps<{
   open: boolean
@@ -29,6 +30,7 @@ const { refreshModels, recalculateRouting, resolveModel } = useModelRouting()
 const { showToast } = useToast()
 
 const apiKey = ref('')
+const showApiKey = ref(false)
 const searchModel = ref('')
 const genModel = ref('')
 const visionModel = ref('')
@@ -37,7 +39,12 @@ const routingMode = ref<RoutingMode>('manual')
 const routingProfile = ref<RoutingProfile>('balanced')
 const searchStatus = ref<'disconnected' | 'connecting' | 'connected'>('disconnected')
 const genStatus = ref<'disconnected' | 'connecting' | 'connected'>('disconnected')
+const visionStatus = ref<'disconnected' | 'connecting' | 'connected'>('disconnected')
+const imageStatus = ref<'disconnected' | 'connecting' | 'connected'>('disconnected')
 const testing = ref(false)
+
+const keyInfo = ref<KeyInfo | null>(null)
+const loadingKeyInfo = ref(false)
 
 const searchModelOptions = SEARCH_MODELS.map((m) => ({ value: m.id, label: m.name }))
 const genModelOptions = GEN_MODELS.map((m) => ({ value: m.id, label: m.name }))
@@ -67,6 +74,7 @@ watch(
   (open) => {
     if (open) {
       apiKey.value = settingsStore.config.openRouterKey
+      showApiKey.value = false
       searchModel.value = settingsStore.config.searchModel
       genModel.value = settingsStore.config.genModel
       visionModel.value = settingsStore.config.visionModel
@@ -75,9 +83,15 @@ watch(
       routingProfile.value = settingsStore.config.routingProfile ?? 'balanced'
       searchStatus.value = 'disconnected'
       genStatus.value = 'disconnected'
+      visionStatus.value = 'disconnected'
+      imageStatus.value = 'disconnected'
+      keyInfo.value = null
 
       if (routingMode.value === 'auto') {
         refreshModels()
+      }
+      if (apiKey.value) {
+        loadKeyInfo()
       }
     }
   },
@@ -95,6 +109,23 @@ watch(routingProfile, (profile) => {
     recalculateRouting(profile)
   }
 })
+
+async function loadKeyInfo() {
+  if (!apiKey.value) return
+  loadingKeyInfo.value = true
+  try {
+    keyInfo.value = await fetchKeyInfo(apiKey.value)
+  } catch {
+    keyInfo.value = null
+  } finally {
+    loadingKeyInfo.value = false
+  }
+}
+
+function formatUsd(val: number | null | undefined): string {
+  if (val == null) return '--'
+  return `$${val.toFixed(2)}`
+}
 
 function getResolvedModelName(task: TaskType): string {
   const modelId = resolveModel(task)
@@ -134,28 +165,42 @@ async function handleTestConnection() {
   }
   searchStatus.value = 'connecting'
   genStatus.value = 'connecting'
+  visionStatus.value = 'connecting'
+  imageStatus.value = 'connecting'
   testing.value = true
 
   try {
-    const [searchResult, genResult] = await Promise.all([
+    const [searchResult, genResult, visionResult, imageResult] = await Promise.all([
       testConnection(config, config.searchModel),
       testConnection(config, config.genModel),
+      testConnection(config, config.visionModel),
+      testConnection(config, config.imageModel),
     ])
 
     searchStatus.value = searchResult.ok ? 'connected' : 'disconnected'
     genStatus.value = genResult.ok ? 'connected' : 'disconnected'
+    visionStatus.value = visionResult.ok ? 'connected' : 'disconnected'
+    imageStatus.value = imageResult.ok ? 'connected' : 'disconnected'
 
-    if (searchResult.ok && genResult.ok) {
+    const results = [
+      { name: '搜索', ok: searchResult.ok, error: searchResult.error },
+      { name: '生成', ok: genResult.ok, error: genResult.error },
+      { name: '视觉', ok: visionResult.ok, error: visionResult.error },
+      { name: '图像', ok: imageResult.ok, error: imageResult.error },
+    ]
+    const failed = results.filter((r) => !r.ok)
+
+    if (failed.length === 0) {
       showToast('所有模型连接成功', 'success')
     } else {
-      const errors: string[] = []
-      if (!searchResult.ok) errors.push(`搜索: ${searchResult.error}`)
-      if (!genResult.ok) errors.push(`生成: ${genResult.error}`)
-      showToast(`连接失败 — ${errors.join('；')}`, 'destructive')
+      const errors = failed.map((r) => `${r.name}: ${r.error}`).join('；')
+      showToast(`连接失败 — ${errors}`, 'destructive')
     }
   } catch (e) {
     searchStatus.value = 'disconnected'
     genStatus.value = 'disconnected'
+    visionStatus.value = 'disconnected'
+    imageStatus.value = 'disconnected'
     const msg = e instanceof Error ? e.message : '测试连接时发生未知错误'
     showToast(msg, 'destructive')
   } finally {
@@ -218,7 +263,22 @@ function handleSave() {
 
       <div class="flex flex-col gap-2">
         <label class="text-sm font-medium">AI 接口密钥</label>
-        <BaseInput v-model="apiKey" type="password" placeholder="请输入从 OpenRouter 获取的 API Key" />
+        <div class="relative">
+          <BaseInput
+            v-model="apiKey"
+            :type="showApiKey ? 'text' : 'password'"
+            placeholder="请输入从 OpenRouter 获取的 API Key"
+            class="pr-10"
+          />
+          <button
+            type="button"
+            class="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground transition-colors hover:text-foreground"
+            @click="showApiKey = !showApiKey"
+          >
+            <Eye v-if="!showApiKey" :size="16" />
+            <EyeOff v-else :size="16" />
+          </button>
+        </div>
         <div class="flex items-center gap-1 text-xs text-muted-foreground">
           <span>这是连接 AI 服务的密钥，从 OpenRouter 网站免费注册获取</span>
           <a
@@ -227,6 +287,31 @@ function handleSave() {
             rel="noopener noreferrer"
             class="text-brand underline hover:text-brand/80"
           >前往获取 →</a>
+        </div>
+      </div>
+
+      <!-- Balance Info -->
+      <div
+        v-if="keyInfo"
+        class="flex items-center gap-4 rounded-lg border bg-muted/30 px-4 py-2.5 text-sm"
+      >
+        <Wallet :size="14" class="shrink-0 text-muted-foreground" />
+        <div class="flex flex-wrap items-center gap-x-4 gap-y-1">
+          <span>
+            <span class="text-muted-foreground">已用</span>
+            <span class="ml-1 font-medium">{{ formatUsd(keyInfo.usage) }}</span>
+          </span>
+          <span v-if="keyInfo.limit != null">
+            <span class="text-muted-foreground">额度</span>
+            <span class="ml-1 font-medium">{{ formatUsd(keyInfo.limit) }}</span>
+          </span>
+          <span v-if="keyInfo.limitRemaining != null">
+            <span class="text-muted-foreground">剩余</span>
+            <span class="ml-1 font-medium text-brand">{{ formatUsd(keyInfo.limitRemaining) }}</span>
+          </span>
+          <span v-if="keyInfo.isFreeTier" class="rounded bg-brand/10 px-1.5 py-0.5 text-xs text-brand">
+            免费套餐
+          </span>
         </div>
       </div>
 
@@ -314,7 +399,7 @@ function handleSave() {
 
       <div class="flex flex-col gap-3 rounded-lg border bg-muted/30 p-4">
         <div class="text-sm font-medium">连接测试</div>
-        <div class="flex flex-wrap items-center gap-6">
+        <div class="grid grid-cols-2 gap-x-6 gap-y-2">
           <div class="flex items-center gap-2">
             <span class="text-sm text-muted-foreground">搜索</span>
             <StatusIndicator :status="searchStatus" />
@@ -323,10 +408,18 @@ function handleSave() {
             <span class="text-sm text-muted-foreground">生成</span>
             <StatusIndicator :status="genStatus" />
           </div>
-          <BaseButton variant="outline" size="sm" :loading="testing" :disabled="testing" @click="handleTestConnection">
-            测试连接
-          </BaseButton>
+          <div class="flex items-center gap-2">
+            <span class="text-sm text-muted-foreground">视觉</span>
+            <StatusIndicator :status="visionStatus" />
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-sm text-muted-foreground">图像</span>
+            <StatusIndicator :status="imageStatus" />
+          </div>
         </div>
+        <BaseButton variant="outline" size="sm" :loading="testing" :disabled="testing" @click="handleTestConnection">
+          测试连接
+        </BaseButton>
       </div>
     </div>
 

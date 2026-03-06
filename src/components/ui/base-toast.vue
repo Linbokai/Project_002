@@ -53,7 +53,7 @@ onUnmounted(() => {
 
 const variantBorderClasses: Record<ToastVariant, string> = {
   default: 'border-border',
-  success: 'border-green-200 dark:border-green-800',
+  success: 'border-success/30',
   destructive: 'border-destructive'
 }
 </script>

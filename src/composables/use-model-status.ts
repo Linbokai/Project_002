@@ -1,20 +1,31 @@
 import { ref, watch, onMounted } from 'vue'
 import { useSettingsStore } from '@/stores/settings-store'
 import { testConnection } from '@/services/api/openrouter-api'
+import { useResolvedModel } from '@/composables/use-resolved-model'
+import type { TaskType } from '@/models/types'
 
 export type ConnectionStatus = 'disconnected' | 'connecting' | 'connected'
 
 export function useModelStatus() {
   const settingsStore = useSettingsStore()
+  const { getModelForTask } = useResolvedModel()
 
   const searchStatus = ref<ConnectionStatus>('disconnected')
   const genStatus = ref<ConnectionStatus>('disconnected')
   const visionStatus = ref<ConnectionStatus>('disconnected')
+  const imageStatus = ref<ConnectionStatus>('disconnected')
+
+  const statusRefs: Record<TaskType, ReturnType<typeof ref<ConnectionStatus>>> = {
+    search: searchStatus,
+    gen: genStatus,
+    vision: visionStatus,
+    image: imageStatus,
+  }
 
   const timers: Record<string, ReturnType<typeof setTimeout>> = {}
 
   async function testModel(
-    task: 'search' | 'gen' | 'vision',
+    task: TaskType,
     statusRef: ReturnType<typeof ref<ConnectionStatus>>,
   ) {
     if (!settingsStore.hasApiKey) {
@@ -22,7 +33,7 @@ export function useModelStatus() {
       return
     }
 
-    const model = settingsStore.getModelForTask(task)
+    const model = getModelForTask(task)
     if (!model) {
       statusRef.value = 'disconnected'
       return
@@ -39,7 +50,7 @@ export function useModelStatus() {
   }
 
   function debouncedTest(
-    task: 'search' | 'gen' | 'vision',
+    task: TaskType,
     statusRef: ReturnType<typeof ref<ConnectionStatus>>,
   ) {
     clearTimeout(timers[task])
@@ -47,17 +58,19 @@ export function useModelStatus() {
   }
 
   function testAll() {
-    testModel('search', searchStatus)
-    testModel('gen', genStatus)
-    testModel('vision', visionStatus)
+    for (const task of Object.keys(statusRefs) as TaskType[]) {
+      testModel(task, statusRefs[task])
+    }
   }
 
-  watch(() => settingsStore.config.searchModel, () => debouncedTest('search', searchStatus))
-  watch(() => settingsStore.config.genModel, () => debouncedTest('gen', genStatus))
-  watch(() => settingsStore.config.visionModel, () => debouncedTest('vision', visionStatus))
+  // Watch resolved model per task — works for both manual and auto modes
+  watch(() => getModelForTask('search'), () => debouncedTest('search', searchStatus))
+  watch(() => getModelForTask('gen'), () => debouncedTest('gen', genStatus))
+  watch(() => getModelForTask('vision'), () => debouncedTest('vision', visionStatus))
+  watch(() => getModelForTask('image'), () => debouncedTest('image', imageStatus))
   watch(() => settingsStore.config.openRouterKey, () => testAll())
 
   onMounted(() => testAll())
 
-  return { searchStatus, genStatus, visionStatus, testAll }
+  return { searchStatus, genStatus, visionStatus, imageStatus, testAll }
 }

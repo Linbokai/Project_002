@@ -224,7 +224,7 @@ const configProgress = computed(() => {
             <span class="text-[11px] text-muted-foreground">配置完成度</span>
             <span
               class="text-[11px] font-bold px-1.5 py-0.5 rounded-full"
-              :class="configProgress.percent === 100 ? 'bg-brand/15 text-brand' : configProgress.done === 0 ? 'bg-amber-500/15 text-amber-500' : 'bg-muted text-muted-foreground'"
+              :class="configProgress.percent === 100 ? 'bg-brand/15 text-brand' : configProgress.done === 0 ? 'bg-warning/15 text-warning' : 'bg-muted text-muted-foreground'"
             >
               {{ configProgress.done }}/{{ configProgress.total }}
             </span>
@@ -264,7 +264,7 @@ const configProgress = computed(() => {
           >
             <div
               class="h-1.5 rounded-full transition-colors duration-300"
-              :class="item.done ? 'bg-brand' : configProgress.done === 0 ? 'bg-amber-500/20' : 'bg-muted-foreground/15'"
+              :class="item.done ? 'bg-brand' : configProgress.done === 0 ? 'bg-warning/20' : 'bg-muted-foreground/15'"
             />
             <span
               class="mt-0.5 block text-center text-[10px] transition-colors"

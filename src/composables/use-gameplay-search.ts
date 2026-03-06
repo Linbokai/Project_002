@@ -6,6 +6,7 @@ import type { GameplayTopic } from '@/models/types'
 import { SearchRegion } from '@/models/enums'
 import { generateId } from '@/utils'
 import { parseJsonArray, safeParseJsonArray } from '@/utils/json-parser'
+import { useResolvedModel } from '@/composables/use-resolved-model'
 
 const SEARCH_PROMPT_DOMESTIC = `你是一位资深国内手游市场分析师，精通国内买量创意趋势。
 
@@ -73,6 +74,7 @@ function parseToGameplayTopics(raw: unknown): GameplayTopic[] {
 export function useGameplaySearch() {
   const gameplayRadarStore = useGameplayRadarStore()
   const settingsStore = useSettingsStore()
+  const { withFallback } = useResolvedModel()
 
   const isSearching = computed(() => unref(gameplayRadarStore.searching))
 
@@ -89,7 +91,7 @@ export function useGameplaySearch() {
     try {
       const response = await chatCompletion({
         config,
-        model: settingsStore.getModelForTask('search'),
+        ...withFallback('search'),
         messages: [{ role: 'user', content: prompt }],
         stream: false,
       })

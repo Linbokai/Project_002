@@ -84,7 +84,7 @@ const ratioLabel = computed(() => {
           </span>
           <span
             v-if="usageCount && usageCount > 0"
-            class="inline-flex items-center gap-0.5 text-orange-500"
+            class="inline-flex items-center gap-0.5 text-warning"
           >
             <Flame :size="9" />
             {{ usageCount }}

@@ -3,48 +3,27 @@ import { useImageStore } from '@/stores/image-store'
 import { useSettingsStore } from '@/stores/settings-store'
 import { useConfigStore } from '@/stores/config-store'
 import { generateImage } from '@/services/api/image-api'
-import { chatCompletion } from '@/services/api/openrouter-api'
 import {
-  buildVisualContextExtractionPrompt,
   buildImageSystemPrompt,
   buildShotImagePrompt,
 } from '@/services/helpers/visual-context-builder'
 import { IMAGE_DEFAULTS } from '@/constants'
 import type { ScriptKey, ShotImageKey, ImageConfig } from '@/models/types'
+import { useVisualContext } from '@/composables/use-visual-context'
+import { useResolvedModel } from '@/composables/use-resolved-model'
 
 export function useShotImage(scriptKey: ScriptKey, shotKey: ShotImageKey) {
   const imageStore = useImageStore()
   const settingsStore = useSettingsStore()
   const configStore = useConfigStore()
+  const { ensureVisualContext } = useVisualContext(scriptKey)
+  const { withFallback } = useResolvedModel()
 
   const image = computed(() => imageStore.getImage(shotKey))
   const loading = computed(() => imageStore.isLoading(shotKey))
   const error = computed(() => imageStore.getError(shotKey))
   const visualContext = computed(() => imageStore.getContext(scriptKey))
   const contextLoading = computed(() => imageStore.isContextLoading(scriptKey))
-
-  async function ensureVisualContext(scriptText: string): Promise<string> {
-    const existing = imageStore.getContext(scriptKey)
-    if (existing) return existing.text
-
-    imageStore.setContextLoading(scriptKey, true)
-    try {
-      const prompt = buildVisualContextExtractionPrompt(scriptText)
-      const result = await chatCompletion({
-        config: settingsStore.config,
-        model: settingsStore.getModelForTask('gen'),
-        messages: [{ role: 'user', content: prompt }],
-        stream: false,
-        temperature: 0.3,
-      })
-
-      const ctx = { text: result, extractedAt: Date.now(), isEdited: false }
-      imageStore.setContext(scriptKey, ctx)
-      return result
-    } finally {
-      imageStore.setContextLoading(scriptKey, false)
-    }
-  }
 
   async function generate(sceneDescription: string, scriptText: string) {
     if (imageStore.isLoading(shotKey)) return
@@ -80,9 +59,10 @@ export function useShotImage(scriptKey: ScriptKey, shotKey: ShotImageKey) {
         image_size: IMAGE_DEFAULTS.IMAGE_SIZE,
       }
 
+      const imageFb = withFallback('image')
       const result = await generateImage({
         apiKey: settingsStore.config.openRouterKey,
-        model: settingsStore.getModelForTask('image'),
+        ...imageFb,
         prompt,
         imageConfig,
         systemPrompt,
@@ -93,7 +73,7 @@ export function useShotImage(scriptKey: ScriptKey, shotKey: ShotImageKey) {
         imageStore.setImage(shotKey, {
           url: result.images[0]!.url,
           prompt: sceneDescription,
-          model: settingsStore.getModelForTask('image'),
+          model: imageFb.model,
           createdAt: Date.now(),
         })
         imageStore.persistToSession()

@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { ScriptVariant, VariantCount } from '@/models/types/variant'
 import { generateId } from '@/utils'
-import { getAngleLabel } from '@/services/helpers/variant-prompt-builder'
+import { getAngleLabel } from '@/constants/variant-angles'
 
 const VARIANT_LABELS = ['变体A', '变体B', '变体C', '变体D', '变体E']
 

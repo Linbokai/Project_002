@@ -81,12 +81,14 @@ function extractAllFields(block: string): ExtractedFields {
 }
 
 export function parseFrames(text: string): Shot[] {
-  const shots = trySchemeFormat(text)
-    ?? tryTimelineFormat(text)
-    ?? tryBracketFormat(text)
-    ?? tryShotNumberFormat(text)
-    ?? tryNumberListFormat(text)
-    ?? fallbackParagraphs(text)
+  const cleaned = text.replace(/\n---[\s\S]*$/, '')
+
+  const shots = trySchemeFormat(cleaned)
+    ?? tryTimelineFormat(cleaned)
+    ?? tryBracketFormat(cleaned)
+    ?? tryShotNumberFormat(cleaned)
+    ?? tryNumberListFormat(cleaned)
+    ?? fallbackParagraphs(cleaned)
 
   return shots.map((s, i) => ({ ...s, id: i + 1 }))
 }

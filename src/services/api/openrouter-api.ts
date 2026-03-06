@@ -13,39 +13,61 @@ interface ChatCompletionMessage {
   content: string | Array<{ type: string; text?: string; image_url?: { url: string } }>
 }
 
-interface RequestOptions {
+export interface RequestOptions {
   config: ApiConfig
   model: string
   messages: ChatCompletionMessage[]
   stream?: boolean
   temperature?: number
   maxTokens?: number
+  fallbackModels?: string[]
+  onModelFallback?: (failedModel: string, nextModel: string) => void
 }
 
-function buildBody(options: RequestOptions) {
+function buildBody(model: string, options: RequestOptions, stream: boolean) {
   return {
-    model: options.model,
+    model,
     messages: options.messages,
-    stream: options.stream ?? true,
+    stream,
     temperature: options.temperature ?? API_DEFAULTS.TEMPERATURE,
     max_tokens: options.maxTokens ?? API_DEFAULTS.MAX_TOKENS,
   }
 }
+
+const NON_RETRYABLE_STATUS = new Set([401, 402])
 
 export async function streamChat(
   options: RequestOptions,
   callbacks: StreamCallbacks,
 ): Promise<void> {
   const url = `${API_DEFAULTS.BASE_URL}/chat/completions`
+  const modelsToTry = [options.model, ...(options.fallbackModels ?? [])]
 
-  try {
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: buildHeaders(options.config.openRouterKey),
-      body: JSON.stringify(buildBody({ ...options, stream: true })),
-    })
+  for (let i = 0; i < modelsToTry.length; i++) {
+    const currentModel = modelsToTry[i]!
+    const isLast = i === modelsToTry.length - 1
+
+    let response: Response
+    try {
+      response = await fetch(url, {
+        method: 'POST',
+        headers: buildHeaders(options.config.openRouterKey),
+        body: JSON.stringify(buildBody(currentModel, options, true)),
+      })
+    } catch (e) {
+      if (!isLast) {
+        options.onModelFallback?.(currentModel, modelsToTry[i + 1]!)
+        continue
+      }
+      callbacks.onError(e instanceof Error ? e.message : '请求失败')
+      return
+    }
 
     if (!response.ok) {
+      if (!isLast && !NON_RETRYABLE_STATUS.has(response.status)) {
+        options.onModelFallback?.(currentModel, modelsToTry[i + 1]!)
+        continue
+      }
       const msg = await parseApiError(response)
       callbacks.onError(msg)
       return
@@ -60,35 +82,37 @@ export async function streamChat(
     const decoder = new TextDecoder()
     let fullText = ''
 
-    while (true) {
-      const { done, value } = await reader.read()
-      if (done) break
+    try {
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
 
-      const chunk = decoder.decode(value, { stream: true })
-      const lines = chunk.split('\n')
+        const chunk = decoder.decode(value, { stream: true })
+        const lines = chunk.split('\n')
 
-      for (const line of lines) {
-        if (!line.startsWith('data: ')) continue
-        const data = line.slice(6).trim()
-        if (data === '[DONE]') continue
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue
+          const data = line.slice(6).trim()
+          if (data === '[DONE]') continue
 
-        try {
-          const parsed = JSON.parse(data)
-          const content = parsed.choices?.[0]?.delta?.content
-          if (content) {
-            fullText += content
-            callbacks.onChunk(content)
+          try {
+            const parsed = JSON.parse(data)
+            const content = parsed.choices?.[0]?.delta?.content
+            if (content) {
+              fullText += content
+              callbacks.onChunk(content)
+            }
+          } catch {
+            // skip malformed SSE lines
           }
-        } catch {
-          // skip malformed SSE lines
         }
       }
-    }
 
-    callbacks.onDone(fullText)
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : '请求失败'
-    callbacks.onError(msg)
+      callbacks.onDone(fullText)
+    } catch (e) {
+      callbacks.onError(e instanceof Error ? e.message : '流式读取失败')
+    }
+    return
   }
 }
 
@@ -96,20 +120,41 @@ export async function chatCompletion(
   options: RequestOptions,
 ): Promise<string> {
   const url = `${API_DEFAULTS.BASE_URL}/chat/completions`
+  const modelsToTry = [options.model, ...(options.fallbackModels ?? [])]
 
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: buildHeaders(options.config.openRouterKey),
-    body: JSON.stringify(buildBody({ ...options, stream: false })),
-  })
+  for (let i = 0; i < modelsToTry.length; i++) {
+    const currentModel = modelsToTry[i]!
+    const isLast = i === modelsToTry.length - 1
 
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => null)
-    throw new Error(errorData?.error?.message ?? `HTTP ${response.status}`)
+    let response: Response
+    try {
+      response = await fetch(url, {
+        method: 'POST',
+        headers: buildHeaders(options.config.openRouterKey),
+        body: JSON.stringify(buildBody(currentModel, options, false)),
+      })
+    } catch (e) {
+      if (!isLast) {
+        options.onModelFallback?.(currentModel, modelsToTry[i + 1]!)
+        continue
+      }
+      throw e
+    }
+
+    if (!response.ok) {
+      if (!isLast && !NON_RETRYABLE_STATUS.has(response.status)) {
+        options.onModelFallback?.(currentModel, modelsToTry[i + 1]!)
+        continue
+      }
+      const msg = await parseApiError(response)
+      throw new Error(msg)
+    }
+
+    const data = await response.json()
+    return data.choices?.[0]?.message?.content ?? ''
   }
 
-  const data = await response.json()
-  return data.choices?.[0]?.message?.content ?? ''
+  throw new Error('所有候选模型均不可用')
 }
 
 export interface TestConnectionResult {

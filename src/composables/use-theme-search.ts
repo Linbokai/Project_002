@@ -9,6 +9,7 @@ import { MessageType } from '@/models/enums'
 import { generateId } from '@/utils'
 import { parseJsonArray, safeParseJsonArray } from '@/utils/json-parser'
 import { useToast } from '@/composables/use-toast'
+import { useResolvedModel } from '@/composables/use-resolved-model'
 
 const PLATFORM_LABELS: Record<SearchPlatform, string> = {
   [SearchPlatform.Douyin]: '抖音',
@@ -73,6 +74,7 @@ export function useThemeSearch() {
   const settingsStore = useSettingsStore()
   const chatStore = useChatStore()
   const { showToast } = useToast()
+  const { withFallback } = useResolvedModel()
 
   const isSearching = computed(() => unref(themeRadarStore.searching))
 
@@ -87,7 +89,7 @@ export function useThemeSearch() {
       const prompt = buildSearchPrompt(unref(themeRadarStore.platform))
       const response = await chatCompletion({
         config,
-        model: settingsStore.getModelForTask('search'),
+        ...withFallback('search'),
         messages: [{ role: 'user', content: prompt }],
         stream: false,
       })
@@ -126,7 +128,7 @@ export function useThemeSearch() {
     await streamChat(
       {
         config,
-        model: settingsStore.getModelForTask('search'),
+        ...withFallback('search'),
         messages: [
           { role: 'system', content: WEEKLY_REPORT_PROMPT },
           { role: 'user', content: userContent },

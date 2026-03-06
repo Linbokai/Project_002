@@ -71,7 +71,7 @@ function toggleTheme(id: string) {
           <span
             v-if="theme.source"
             class="shrink-0 rounded px-1 text-[9px] font-normal opacity-80"
-            :class="theme.source === 'ai' ? 'bg-purple-500/20 text-purple-600 dark:text-purple-400' : 'bg-blue-500/20 text-blue-600 dark:text-blue-400'"
+            :class="theme.source === 'ai' ? 'bg-ai/20 text-ai' : 'bg-info/20 text-info'"
           >
             {{ theme.source === 'ai' ? 'AI' : '数据' }}
           </span>
