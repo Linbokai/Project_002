@@ -9,6 +9,11 @@ export const useChatStore = defineStore('chat', () => {
   const currentStreamText = ref('')
   const errorMessage = ref('')
   const currentSessionId = ref<string | null>(null)
+  let abortController: AbortController | null = null
+
+  function getSignal(): AbortSignal | undefined {
+    return abortController?.signal
+  }
 
   function addMessage(message: ChatMessage) {
     messages.value.push(message)
@@ -23,6 +28,7 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   function startGeneration(type?: MessageType) {
+    abortController = new AbortController()
     status.value = GenerationStatus.Generating
     currentStreamText.value = ''
     errorMessage.value = ''
@@ -30,8 +36,22 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   function finishGeneration() {
+    abortController = null
     status.value = GenerationStatus.Done
     currentStreamText.value = ''
+  }
+
+  function cancelGeneration() {
+    if (abortController) {
+      abortController.abort()
+      abortController = null
+    }
+    status.value = GenerationStatus.Done
+    currentStreamText.value = ''
+    const last = messages.value[messages.value.length - 1]
+    if (last && last.role === 'assistant' && !last.content) {
+      messages.value.pop()
+    }
   }
 
   function failGeneration(error: string) {
@@ -71,6 +91,8 @@ export const useChatStore = defineStore('chat', () => {
     appendToStream,
     startGeneration,
     finishGeneration,
+    cancelGeneration,
+    getSignal,
     failGeneration,
     clearMessages,
     getMessagesForApi,

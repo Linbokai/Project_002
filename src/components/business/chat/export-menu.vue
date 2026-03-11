@@ -3,7 +3,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { Download, Copy, FileText, FileSpreadsheet, FileDown, FileCode, FileType, Check } from 'lucide-vue-next'
 import BaseButton from '@/components/ui/base-button.vue'
 import { parseFrames } from '@/services/helpers/frame-parser'
-import { formatAsMarkdown, formatAsCsv } from '@/services/helpers/export-formatter'
+import { formatAsMarkdown, formatAsCsv, formatAsXls } from '@/services/helpers/export-formatter'
 import { useScriptExport } from '@/composables/use-script-export'
 
 const props = defineProps<{
@@ -100,6 +100,15 @@ function handleDownloadCsv() {
   emit('exported')
 }
 
+function handleDownloadXls() {
+  const shots = parseFrames(props.scriptText)
+  const xls = formatAsXls(shots, props.gameName || '脚本')
+  const name = props.gameName || '脚本'
+  downloadBlob(xls, `${name}_分镜_${dateSuffix()}.xls`, 'application/vnd.ms-excel;charset=utf-8')
+  close()
+  emit('exported')
+}
+
 function handleDownloadHtml() {
   const name = props.gameName || '脚本'
   downloadHtml(props.scriptText, `${name}_${dateSuffix()}`)
@@ -116,6 +125,7 @@ function handleDownloadPlainText() {
 
 const menuItems = [
   { label: '复制脚本', icon: Copy, action: handleCopy },
+  { label: '下载 Excel 分镜表', icon: FileSpreadsheet, action: handleDownloadXls },
   { label: '下载 TXT', icon: FileText, action: handleDownloadTxt },
   { label: '下载 Markdown', icon: FileDown, action: handleDownloadMarkdown },
   { label: '下载 CSV', icon: FileSpreadsheet, action: handleDownloadCsv },

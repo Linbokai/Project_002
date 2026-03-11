@@ -1,6 +1,9 @@
 import { ThemeCategory } from '@/models/enums'
 import type { PresetTheme } from '@/models/types'
 
+/** 预设主题数据最后更新日期，更新数据时同步修改此字段 */
+export const PRESET_THEMES_UPDATED_AT = '2025-06'
+
 export const PRESET_THEMES: PresetTheme[] = [
   // T1 高热 - 平台数据
   { id: 'zombie', name: '丧尸末日', tier: 'T1', description: '末日生存题材，丧尸围城+求生压迫感', category: ThemeCategory.SubjectAesthetic, scenes: ['zombie', 'survive'], source: 'platform', trendScore: 95 },

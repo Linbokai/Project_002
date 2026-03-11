@@ -14,6 +14,7 @@ import {
   buildGameplayDirectionsPrompt,
   buildGameplayDetailPrompt,
 } from '@/services/helpers/gameplay-prompt-builder'
+import { API_DEFAULTS } from '@/constants'
 import { GenerationStatus, MessageType, ProductionDirection, UeContentType } from '@/models/enums'
 import { useToast } from '@/composables/use-toast'
 import { useSessionPersistence } from '@/composables/use-session-persistence'
@@ -67,11 +68,14 @@ export function useChat() {
       ...chatStore.getMessagesForApi(),
     ]
 
+    const isScriptGen = type === MessageType.Script
     await streamChat(
       {
         config,
         ...withFallback('gen'),
         messages,
+        maxTokens: isScriptGen ? API_DEFAULTS.MAX_TOKENS_SCRIPT : undefined,
+        signal: chatStore.getSignal(),
       },
       {
         onChunk: (chunk) => chatStore.appendToStream(chunk),
@@ -151,6 +155,7 @@ export function useChat() {
           config,
           ...withFallback('gen'),
           messages,
+          signal: chatStore.getSignal(),
         },
         {
           onChunk: (chunk) => {
@@ -208,6 +213,7 @@ export function useChat() {
         config,
         ...withFallback('gen'),
         messages,
+        signal: chatStore.getSignal(),
       },
       {
         onChunk: (chunk) => chatStore.appendToStream(chunk),
@@ -235,12 +241,10 @@ export function useChat() {
     const currentGame = unref(gameStore.currentGame)
     const userPrompt = buildGameplayDetailPrompt(directionNumber, genConfig, currentGame)
 
-    const directionsContext = chatStore.getMessagesForApi()
-      .filter((m) => m.role === 'assistant')
-      .map((m) => m.content)
-      .join('\n\n')
-
-    const systemPrompt = buildUeSystemPrompt(genConfig, currentGame, directionsContext)
+    const allApiMsgs = chatStore.getMessagesForApi()
+    const lastAssistant = [...allApiMsgs].reverse().find((m) => m.role === 'assistant')
+    const directionsContent = lastAssistant?.content ?? ''
+    const systemPrompt = buildUeSystemPrompt(genConfig, currentGame, directionsContent)
 
     const dirLabel = ['一', '二', '三'][directionNumber - 1] ?? String(directionNumber)
     chatStore.addMessage({
@@ -252,7 +256,6 @@ export function useChat() {
 
     const messages = [
       { role: 'system', content: systemPrompt },
-      ...chatStore.getMessagesForApi().slice(0, -1),
       { role: 'user', content: userPrompt },
     ]
 
@@ -261,6 +264,8 @@ export function useChat() {
         config,
         ...withFallback('gen'),
         messages,
+        maxTokens: API_DEFAULTS.MAX_TOKENS_SCRIPT,
+        signal: chatStore.getSignal(),
       },
       {
         onChunk: (chunk) => chatStore.appendToStream(chunk),

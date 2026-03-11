@@ -96,6 +96,10 @@ function buildContextSection(config: GenerationConfig, game: Game | null): strin
     lines.push(`\n### 补充要求\n${config.additionalRequirements}`)
   }
 
+  if (config.referenceNote) {
+    lines.push(`\n### 爆款参考方向\n以下是用户提供的参考风格/钩子描述，请充分参考并融入脚本创作中：\n${config.referenceNote}`)
+  }
+
   return lines.join('\n')
 }
 

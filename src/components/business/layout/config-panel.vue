@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { ChevronDown, Info, LayoutGrid, Save, Sparkles } from 'lucide-vue-next'
+import { ChevronDown, Info, LayoutGrid, Save, Sparkles, Upload, Download } from 'lucide-vue-next'
 import BaseButton from '@/components/ui/base-button.vue'
 import BaseSelect from '@/components/ui/base-select.vue'
 import BaseInput from '@/components/ui/base-input.vue'
@@ -26,8 +26,10 @@ import { ProductionDirection, UeContentType, ScriptType, ScriptCategory, Audienc
 import { SCRIPT_TYPES, SCRIPT_CATEGORIES } from '@/constants/script-types'
 import { AUDIENCE_PROFILES } from '@/constants/audience-profiles'
 import { SELL_TAG_GROUPS } from '@/constants/sell-tags'
+import { PRESET_THEMES_UPDATED_AT } from '@/constants/preset-themes'
 import type { AdPlatform } from '@/constants/ad-platforms'
 import type { GenerationConfig } from '@/models/types'
+import { useConfigSnapshot } from '@/composables/use-config-snapshot'
 
 defineProps<{
   collapsed?: boolean
@@ -42,6 +44,7 @@ const configStore = useConfigStore()
 const gameStore = useGameStore()
 const themeRadarStore = useThemeRadarStore()
 const gameplayRadarStore = useGameplayRadarStore()
+const { exportSnapshot, triggerImport } = useConfigSnapshot()
 const { getSmartConfig, getPresetKeys } = useSmartConfig()
 
 const isUeDirection = computed(() => configStore.config.direction === ProductionDirection.UeGameplay)
@@ -215,6 +218,24 @@ const configProgress = computed(() => {
           <Save :size="14" />
           保存为模板
         </button>
+        <div class="flex shrink-0 gap-1">
+          <button
+            type="button"
+            title="导出配置（分享给团队）"
+            class="inline-flex items-center justify-center rounded-md border border-border bg-background p-1.5 text-muted-foreground shadow-xs transition-colors hover:bg-accent hover:text-foreground"
+            @click="exportSnapshot()"
+          >
+            <Download :size="13" />
+          </button>
+          <button
+            type="button"
+            title="导入配置（从团队获取）"
+            class="inline-flex items-center justify-center rounded-md border border-border bg-background p-1.5 text-muted-foreground shadow-xs transition-colors hover:bg-accent hover:text-foreground"
+            @click="triggerImport()"
+          >
+            <Upload :size="13" />
+          </button>
+        </div>
       </div>
 
       <!-- ==================== Progress Indicator ==================== -->
@@ -232,7 +253,10 @@ const configProgress = computed(() => {
           <div class="relative">
             <button
               type="button"
-              class="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium text-brand bg-brand/10 hover:bg-brand/20 transition-colors"
+              class="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium transition-colors"
+              :class="configProgress.percent < 100
+                ? 'text-brand bg-brand/10 hover:bg-brand/20 ring-1 ring-brand/30 animate-pulse'
+                : 'text-brand bg-brand/10 hover:bg-brand/20'"
               @click="smartConfigOpen = !smartConfigOpen"
             >
               <Sparkles :size="12" />
@@ -243,6 +267,7 @@ const configProgress = computed(() => {
                 v-if="smartConfigOpen"
                 class="absolute right-0 top-full z-20 mt-1 w-36 rounded-lg border border-border bg-card p-1 shadow-lg"
               >
+                <p class="px-2.5 py-1 text-[10px] text-muted-foreground">选择游戏类型一键填充</p>
                 <button
                   v-for="key in getPresetKeys()"
                   :key="key"
@@ -258,22 +283,34 @@ const configProgress = computed(() => {
         </div>
         <div class="flex gap-1">
           <div
-            v-for="item in configProgress.items"
+            v-for="(item, idx) in configProgress.items"
             :key="item.label"
             class="flex-1"
           >
             <div
-              class="h-1.5 rounded-full transition-colors duration-300"
-              :class="item.done ? 'bg-brand' : configProgress.done === 0 ? 'bg-warning/20' : 'bg-muted-foreground/15'"
+              class="h-1.5 rounded-full transition-colors duration-300 relative"
+              :class="item.done ? 'bg-brand' : configProgress.done === 0 ? 'bg-warning/30' : 'bg-muted-foreground/15'"
             />
-            <span
-              class="mt-0.5 block text-center text-[10px] transition-colors"
-              :class="item.done ? 'text-brand font-medium' : 'text-muted-foreground/50'"
-            >
-              {{ item.label }}
-            </span>
+            <div class="mt-0.5 flex items-center justify-center gap-0.5">
+              <span
+                v-if="!item.done && (idx === 0 || configProgress.items[idx - 1]?.done)"
+                class="text-[9px] text-warning"
+              >▶</span>
+              <span
+                class="text-[10px] transition-colors"
+                :class="item.done ? 'text-brand font-medium' : !item.done && (idx === 0 || configProgress.items[idx - 1]?.done) ? 'text-warning font-medium' : 'text-muted-foreground/50'"
+              >
+                {{ item.label }}
+              </span>
+            </div>
           </div>
         </div>
+        <p
+          v-if="configProgress.percent < 100"
+          class="mt-1.5 text-[10px] text-muted-foreground/60"
+        >
+          {{ configProgress.done === 0 ? '点击「智能配置」一键填充推荐参数 ↑' : `还差 ${configProgress.total - configProgress.done} 项，完成后脚本质量更佳` }}
+        </p>
       </div>
 
       <!-- ==================== Section 1: Basic Config ==================== -->
@@ -568,6 +605,9 @@ const configProgress = computed(() => {
 
             <!-- Preset Tab -->
             <template v-if="radarTab === 'preset'">
+              <p class="text-[10px] text-muted-foreground/50">
+                数据更新于 {{ PRESET_THEMES_UPDATED_AT }}，热度仅供参考
+              </p>
               <template v-if="!isUeDirection">
                 <PresetThemes tier="T1" />
                 <PresetThemes tier="T2" />
@@ -783,6 +823,23 @@ const configProgress = computed(() => {
                 "
               />
             </template>
+          </div>
+
+          <!-- Reference Note -->
+          <div class="flex flex-col gap-1.5">
+            <label class="flex items-center gap-1 text-xs font-medium">
+              爆款参考
+              <span class="group relative">
+                <Info :size="12" class="text-muted-foreground/60" />
+                <span class="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded-md bg-popover px-2 py-1 text-[11px] text-popover-foreground shadow-md opacity-0 transition-opacity group-hover:opacity-100">描述参考视频的风格或钩子，AI 会参考该方向写脚本</span>
+              </span>
+            </label>
+            <BaseTextarea
+              :model-value="configStore.config.referenceNote ?? ''"
+              placeholder="粘贴参考视频描述，如：开头用「你还在 XX 吗」的质问式钩子，30s 内展示三个对比场景…"
+              :rows="3"
+              @update:model-value="(v) => configStore.updateConfig({ referenceNote: v })"
+            />
           </div>
         </div>
         </div>

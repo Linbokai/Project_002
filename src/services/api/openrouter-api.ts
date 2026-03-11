@@ -22,6 +22,7 @@ export interface RequestOptions {
   maxTokens?: number
   fallbackModels?: string[]
   onModelFallback?: (failedModel: string, nextModel: string) => void
+  signal?: AbortSignal
 }
 
 function buildBody(model: string, options: RequestOptions, stream: boolean) {
@@ -53,8 +54,13 @@ export async function streamChat(
         method: 'POST',
         headers: buildHeaders(options.config.openRouterKey),
         body: JSON.stringify(buildBody(currentModel, options, true)),
+        signal: options.signal,
       })
     } catch (e) {
+      if (e instanceof DOMException && e.name === 'AbortError') {
+        callbacks.onDone('')
+        return
+      }
       if (!isLast) {
         options.onModelFallback?.(currentModel, modelsToTry[i + 1]!)
         continue
@@ -110,6 +116,10 @@ export async function streamChat(
 
       callbacks.onDone(fullText)
     } catch (e) {
+      if (e instanceof DOMException && e.name === 'AbortError') {
+        callbacks.onDone(fullText)
+        return
+      }
       callbacks.onError(e instanceof Error ? e.message : '流式读取失败')
     }
     return

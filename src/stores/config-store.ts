@@ -22,6 +22,7 @@ function defaultConfig(): GenerationConfig {
     additionalRequirements: '',
     ueContentType: UeContentType.Gameplay,
     selectedGameplays: [],
+    referenceNote: '',
   }
 }
 

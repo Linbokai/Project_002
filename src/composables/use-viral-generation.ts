@@ -59,6 +59,7 @@ export function useViralGeneration() {
         config,
         ...fb,
         messages,
+        signal: chatStore.getSignal(),
       },
       {
         onChunk: (chunk) => chatStore.appendToStream(chunk),

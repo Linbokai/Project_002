@@ -129,4 +129,82 @@ export function formatAsPlainText(script: string): string {
     .replace(/`(.*?)`/g, '$1')
 }
 
-export type ExportFormat = 'markdown' | 'csv' | 'html' | 'txt'
+export type ExportFormat = 'markdown' | 'csv' | 'html' | 'txt' | 'xls'
+
+function escapeXml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;')
+}
+
+const XLS_COLUMNS = [
+  { label: '镜号', width: 45 },
+  { label: '时间', width: 65 },
+  { label: '段落', width: 90 },
+  { label: '景别', width: 65 },
+  { label: '画面描述', width: 220 },
+  { label: '台词', width: 220 },
+  { label: '字幕', width: 160 },
+  { label: '备注', width: 120 },
+]
+
+export function formatAsXls(shots: Shot[], gameName: string): string {
+  const title = escapeXml(gameName || '脚本')
+
+  const headerCells = XLS_COLUMNS.map(
+    (col) => `<Cell ss:StyleID="header"><Data ss:Type="String">${escapeXml(col.label)}</Data></Cell>`,
+  ).join('')
+
+  const colDefs = XLS_COLUMNS.map(
+    (col) => `<Column ss:Width="${col.width}"/>`,
+  ).join('')
+
+  const dataRows = shots.map((shot) => {
+    const fields = [
+      String(shot.id),
+      shot.timeRange || '',
+      shot.segment || '',
+      shot.scale || '',
+      shot.scene || '',
+      shot.voiceover || '',
+      shot.textOverlay || '',
+      shot.notes || '',
+    ]
+    const cells = fields
+      .map((v) => `<Cell ss:StyleID="cell"><Data ss:Type="String">${escapeXml(v)}</Data></Cell>`)
+      .join('')
+    return `<Row>${cells}</Row>`
+  }).join('')
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+  xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+  <Styles>
+    <Style ss:ID="header">
+      <Font ss:Bold="1" ss:Color="#FFFFFF"/>
+      <Interior ss:Color="#4F81BD" ss:Pattern="Solid"/>
+      <Alignment ss:Horizontal="Center" ss:Vertical="Center" ss:WrapText="1"/>
+    </Style>
+    <Style ss:ID="cell">
+      <Alignment ss:Vertical="Top" ss:WrapText="1"/>
+    </Style>
+  </Styles>
+  <Worksheet ss:Name="${title}_分镜表">
+    <Table>${colDefs}
+      <Row ss:Height="24">${headerCells}</Row>
+      ${dataRows}
+    </Table>
+    <WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel">
+      <FreezePanes/>
+      <FrozenNoSplit/>
+      <SplitHorizontal>1</SplitHorizontal>
+      <TopRowBottomPane>1</TopRowBottomPane>
+      <ActivePane>2</ActivePane>
+    </WorksheetOptions>
+  </Worksheet>
+</Workbook>`
+}

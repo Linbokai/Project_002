@@ -12,6 +12,7 @@ import {
   buildDirectionDetailPrompt,
 } from '@/services/helpers/analysis-prompt-builder'
 import { buildSystemPrompt } from '@/services/helpers/script-prompt-builder'
+import { API_DEFAULTS } from '@/constants'
 import { MessageType } from '@/models/enums'
 import { useToast } from '@/composables/use-toast'
 import { useVideoFrames } from '@/composables/use-video-frames'
@@ -54,13 +55,13 @@ export function parseAnalysisScore(content: string): AnalysisScore | null {
   }
 }
 
-export function useVideoAnalysis() {
-  const analyzing = ref(false)
-  const videoFile = ref<File | null>(null)
-  const lastMetrics = ref<VideoMetrics | undefined>()
-  const hasAnalysisResult = ref(false)
-  const hasDirectionsResult = ref(false)
+const analyzing = ref(false)
+const videoFile = ref<File | null>(null)
+const lastMetrics = ref<VideoMetrics | undefined>()
+const hasAnalysisResult = ref(false)
+const hasDirectionsResult = ref(false)
 
+export function useVideoAnalysis() {
   const chatStore = useChatStore()
   const configStore = useConfigStore()
   const gameStore = useGameStore()
@@ -120,6 +121,7 @@ export function useVideoAnalysis() {
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userContent },
           ],
+          signal: chatStore.getSignal(),
         },
         {
           onChunk: (chunk) => chatStore.appendToStream(chunk),
@@ -166,6 +168,7 @@ export function useVideoAnalysis() {
         config,
         ...withFallback('gen'),
         messages,
+        signal: chatStore.getSignal(),
       },
       {
         onChunk: (chunk) => chatStore.appendToStream(chunk),
@@ -208,6 +211,7 @@ export function useVideoAnalysis() {
         config,
         ...withFallback('gen'),
         messages,
+        signal: chatStore.getSignal(),
       },
       {
         onChunk: (chunk) => chatStore.appendToStream(chunk),
@@ -232,12 +236,10 @@ export function useVideoAnalysis() {
     const game = unref(gameStore.currentGame)
     const userPrompt = buildDirectionDetailPrompt(directionNumber, genConfig, game)
 
-    const analysisContext = chatStore.getMessagesForApi()
-      .filter((m) => m.role === 'assistant')
-      .map((m) => m.content)
-      .join('\n\n')
-
-    const systemPrompt = buildSystemPrompt(genConfig, game, analysisContext)
+    const allApiMsgs = chatStore.getMessagesForApi()
+    const lastAssistant = [...allApiMsgs].reverse().find((m) => m.role === 'assistant')
+    const directionsContent = lastAssistant?.content ?? ''
+    const systemPrompt = buildSystemPrompt(genConfig, game, directionsContent)
 
     chatStore.addMessage({
       role: 'user',
@@ -248,7 +250,6 @@ export function useVideoAnalysis() {
 
     const messages = [
       { role: 'system', content: systemPrompt },
-      ...chatStore.getMessagesForApi().slice(0, -1),
       { role: 'user', content: userPrompt },
     ]
 
@@ -257,6 +258,8 @@ export function useVideoAnalysis() {
         config,
         ...withFallback('gen'),
         messages,
+        maxTokens: API_DEFAULTS.MAX_TOKENS_SCRIPT,
+        signal: chatStore.getSignal(),
       },
       {
         onChunk: (chunk) => chatStore.appendToStream(chunk),

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from 'vue'
-import { AlertCircle } from 'lucide-vue-next'
+import { AlertCircle, StopCircle } from 'lucide-vue-next'
 import { useChatStore } from '@/stores/chat-store'
 import { useVariantStore } from '@/stores/variant-store'
 import { GenerationStatus } from '@/models/enums'
@@ -9,6 +9,7 @@ import EmptyState from './empty-state.vue'
 import MessageBubble from './message-bubble.vue'
 import VariantResults from './variant-results.vue'
 import TypingIndicator from './typing-indicator.vue'
+import BaseButton from '@/components/ui/base-button.vue'
 
 const emit = defineEmits<{
   'open-settings': []
@@ -82,6 +83,10 @@ function handleOpenSettings() {
 function handleOpenGameManager() {
   emit('open-game-manager')
 }
+
+function handleCancel() {
+  chatStore.cancelGeneration()
+}
 </script>
 
 <template>
@@ -114,7 +119,19 @@ function handleOpenGameManager() {
           :variants="variantStore.variants"
           @select="variantStore.selectVariant($event)"
         />
-        <TypingIndicator v-if="showTyping" :label="typingLabel" :stages="typingStages" />
+        <div v-if="showTyping" class="flex items-start gap-2">
+          <TypingIndicator :label="typingLabel" :stages="typingStages" />
+          <BaseButton
+            variant="ghost"
+            size="sm"
+            class="h-7 shrink-0 px-2 text-xs text-muted-foreground hover:text-destructive"
+            title="取消生成"
+            @click="handleCancel"
+          >
+            <StopCircle :size="14" />
+            取消
+          </BaseButton>
+        </div>
         <div
           v-if="hasError"
           class="flex items-start gap-3 rounded-lg border border-destructive/50 bg-destructive/5 p-4"

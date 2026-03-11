@@ -35,6 +35,7 @@ export const API_DEFAULTS = {
   ROUTING_PROFILE: 'balanced' as const,
   TEMPERATURE: 0.85,
   MAX_TOKENS: 4096,
+  MAX_TOKENS_SCRIPT: 8192,
   MAX_TOKENS_VISION: 8192,
 } as const
 

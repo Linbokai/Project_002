@@ -34,6 +34,7 @@ export interface GenerationConfig {
   additionalRequirements: string
   ueContentType: UeContentType
   selectedGameplays: string[]
+  referenceNote: string
 }
 
 export interface ApiConfig {

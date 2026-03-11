@@ -117,7 +117,6 @@ const gameName = computed(() => gameStore.currentGame?.name ?? '脚本')
       v-if="showScriptActions"
       :script-text="message.content"
       :game-name="gameName"
-      :message-timestamp="message.timestamp"
     />
     <AnalysisActions
       v-if="showAnalysisActions"
