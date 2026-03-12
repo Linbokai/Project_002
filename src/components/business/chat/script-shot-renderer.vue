@@ -1,13 +1,18 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { ChevronDown, ChevronRight, Loader2, Pencil, X, Upload, User, Palette } from 'lucide-vue-next'
+import { ChevronDown, ChevronRight, Loader2, Pencil, X, Upload, User, Palette, LayoutGrid, RefreshCw, AlertCircle } from 'lucide-vue-next'
 import { parseFrames } from '@/services/helpers/frame-parser'
 import { useImageStore } from '@/stores/image-store'
 import BaseButton from '@/components/ui/base-button.vue'
 import ScriptViewSwitcher from './script-view-switcher.vue'
 import ScriptTableView from './script-table-view.vue'
 import ScriptTimelineView from './script-timeline-view.vue'
+import ShotImageBlock from './shot-image-block.vue'
+import MarkdownContent from '@/components/ui/markdown-content.vue'
 import type { ReferenceImage, ReferenceImageType } from '@/models/types'
+import { useConfigStore } from '@/stores/config-store'
+import { ProductionDirection } from '@/models/enums'
+import { useStoryboardGrid } from '@/composables/use-storyboard-grid'
 
 const props = defineProps<{
   content: string
@@ -15,8 +20,23 @@ const props = defineProps<{
 }>()
 
 const imageStore = useImageStore()
+const configStore = useConfigStore()
 const scriptKey = computed(() => String(props.messageTimestamp))
-const shots = computed(() => parseFrames(props.content))
+const isUeDirection = computed(() => configStore.config.direction === ProductionDirection.UeGameplay)
+
+const { gridImage, loading: gridLoading, error: gridError, generateGrid } = useStoryboardGrid(scriptKey.value)
+
+// 将策划简案与分镜脚本两部分拆分，避免策划内容被当成分镜解析
+const STORYBOARD_SPLIT_RE = /(?:\*{0,2}第二部分[：:]\s*分镜脚本\*{0,2}|##\s*第二部分[：:]\s*分镜脚本|##\s*分镜脚本)/i
+const splitContent = computed(() => {
+  const m = props.content.match(STORYBOARD_SPLIT_RE)
+  if (!m || m.index === undefined) return { planning: '', storyboard: props.content }
+  return {
+    planning: props.content.slice(0, m.index).trim(),
+    storyboard: props.content.slice(m.index).trim(),
+  }
+})
+const shots = computed(() => parseFrames(splitContent.value.storyboard))
 
 const contextExpanded = ref(false)
 const contextEditing = ref(false)
@@ -82,14 +102,11 @@ function cancelEditContext() {
 
 const activeView = ref<'cards' | 'table' | 'timeline'>('cards')
 
-const fieldLabels: Record<string, string> = {
-  textOverlay: '字幕',
-  camera: '镜头',
-  vfx: '特效',
-  transition: '转场',
-  sfx: '音效',
-  notes: '备注',
-}
+const fieldLabels = computed<Record<string, string>>(() =>
+  isUeDirection.value
+    ? { textOverlay: '字幕', camera: '镜头', vfx: '游戏反馈', transition: '转场', sfx: '音效', notes: '玩家操作' }
+    : { textOverlay: '字幕', camera: '镜头', vfx: '特效', transition: '转场', sfx: '音效', notes: '备注' }
+)
 
 </script>
 
@@ -265,6 +282,12 @@ const fieldLabels: Record<string, string> = {
       </div>
     </div>
 
+    <!-- 玩法策划简案（仅当有策划内容时显示） -->
+    <div v-if="splitContent.planning" class="mb-3 rounded-md border border-border/60 bg-muted/20 px-3 py-2">
+      <p class="mb-1.5 text-[11px] font-medium text-muted-foreground">玩法策划简案</p>
+      <MarkdownContent :content="splitContent.planning" class="text-sm" />
+    </div>
+
     <!-- 视图切换 -->
     <div class="flex items-center justify-between mb-1">
       <span class="text-[11px] text-muted-foreground">分镜 ({{ shots.length }})</span>
@@ -328,9 +351,53 @@ const fieldLabels: Record<string, string> = {
             </div>
           </template>
         </div>
+        <ShotImageBlock
+          v-if="isUeDirection && shot.scene"
+          :shot-key="String(shot.id)"
+          :script-key="scriptKey"
+          :scene-text="shot.scene"
+          :script-content="content"
+        />
       </div>
     </div>
     </template>
+
+    <!-- 九宫格生图 -->
+    <div v-if="isUeDirection" class="mt-3 border-t border-border/40 pt-3">
+      <div v-if="gridLoading" class="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <Loader2 :size="12" class="animate-spin" />
+        <span>九宫格生成中...</span>
+      </div>
+      <div v-else-if="gridError" class="flex items-center gap-1.5 text-xs text-destructive">
+        <AlertCircle :size="12" />
+        <span>{{ gridError }}</span>
+        <button class="ml-1 underline hover:no-underline" @click="generateGrid(content)">重试</button>
+      </div>
+      <div v-else-if="gridImage" class="space-y-1.5">
+        <div class="group relative inline-block">
+          <img
+            :src="gridImage.url"
+            alt="九宫格分镜概览"
+            class="max-w-full rounded-md border border-border shadow-sm"
+          />
+          <button
+            class="absolute right-1 top-1 rounded-md bg-background/80 p-1 opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100"
+            title="重新生成"
+            @click="generateGrid(content)"
+          >
+            <RefreshCw :size="12" />
+          </button>
+        </div>
+      </div>
+      <button
+        v-else
+        class="inline-flex items-center gap-1.5 rounded-md border border-border/60 px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+        @click="generateGrid(content)"
+      >
+        <LayoutGrid :size="13" />
+        九宫格生图
+      </button>
+    </div>
 
   </div>
 </template>
