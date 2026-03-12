@@ -8,6 +8,8 @@ import type {
 } from '@/models/enums'
 import type { RoutingMode, RoutingProfile } from './model-routing'
 
+export type Provider = 'openrouter' | 'ark'
+
 export interface HeroConfig {
   mode: 'game' | 'trending' | 'custom'
   value: string
@@ -38,6 +40,8 @@ export interface GenerationConfig {
 }
 
 export interface ApiConfig {
+  provider: Provider
+  // OpenRouter
   openRouterKey: string
   searchModel: string
   genModel: string
@@ -45,6 +49,11 @@ export interface ApiConfig {
   imageModel: string
   routingMode: RoutingMode
   routingProfile: RoutingProfile
+  // 火山方舟
+  arkKey: string
+  arkGenModel: string
+  arkVisionModel: string
+  arkImageModel: string
 }
 
 export interface KeyInfo {

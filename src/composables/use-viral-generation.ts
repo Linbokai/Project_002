@@ -24,7 +24,7 @@ export function useViralGeneration() {
     count: number = 3
   ): Promise<void> {
     const config = settingsStore.config
-    if (!config.openRouterKey) {
+    if (!settingsStore.hasApiKey) {
       showToast('请先配置 API Key', 'destructive')
       return
     }

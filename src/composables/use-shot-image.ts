@@ -61,7 +61,7 @@ export function useShotImage(scriptKey: ScriptKey, shotKey: ShotImageKey) {
 
       const imageFb = withFallback('image')
       const result = await generateImage({
-        apiKey: settingsStore.config.openRouterKey,
+        config: settingsStore.config,
         ...imageFb,
         prompt,
         imageConfig,

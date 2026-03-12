@@ -145,7 +145,7 @@ export function useScriptScore() {
 
   async function optimizeScript(originalScript: string, suggestions: string[]): Promise<void> {
     const config = unref(settingsStore.config)
-    if (!config.openRouterKey) {
+    if (!settingsStore.hasApiKey) {
       showToast('请先配置 API Key', 'destructive')
       return
     }

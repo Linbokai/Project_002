@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { Sparkles, Eye, EyeOff, Wallet } from 'lucide-vue-next'
+import { Sparkles, Eye, EyeOff, Wallet, Lock } from 'lucide-vue-next'
 import BaseDialog from '@/components/ui/base-dialog.vue'
 import BaseButton from '@/components/ui/base-button.vue'
 import BaseInput from '@/components/ui/base-input.vue'
@@ -10,11 +10,11 @@ import StatusIndicator from '@/components/ui/status-indicator.vue'
 import { useSettingsStore } from '@/stores/settings-store'
 import { useModelRoutingStore } from '@/stores/model-routing-store'
 import { useModelRouting } from '@/composables/use-model-routing'
-import { testConnection } from '@/services/api/openrouter-api'
+import { testConnection, testImageConnection } from '@/services/api/openrouter-api'
 import { fetchKeyInfo } from '@/services/api/openrouter-client'
 import { SEARCH_MODELS, GEN_MODELS, VISION_MODELS, IMAGE_MODELS } from '@/constants/model-options'
 import { useToast } from '@/composables/use-toast'
-import type { ApiConfig, KeyInfo, RoutingMode, RoutingProfile, TaskType } from '@/models/types'
+import type { ApiConfig, KeyInfo, RoutingMode, RoutingProfile, TaskType, Provider } from '@/models/types'
 
 const props = defineProps<{
   open: boolean
@@ -29,6 +29,44 @@ const routingStore = useModelRoutingStore()
 const { refreshModels, recalculateRouting, resolveModel } = useModelRouting()
 const { showToast } = useToast()
 
+// Provider selection
+const provider = ref<Provider>('ark')
+
+// OpenRouter lock
+const orUnlocked = ref(false)
+const showOrLock = ref(false)
+const orPassword = ref('')
+const orPasswordError = ref(false)
+
+function handleOrButtonClick() {
+  if (orUnlocked.value) {
+    switchProvider('openrouter')
+  } else {
+    showOrLock.value = true
+    orPassword.value = ''
+    orPasswordError.value = false
+  }
+}
+
+function submitOrPassword() {
+  if (orPassword.value === 'BT2026') {
+    orUnlocked.value = true
+    showOrLock.value = false
+    orPasswordError.value = false
+    switchProvider('openrouter')
+  } else {
+    orPasswordError.value = true
+    orPassword.value = ''
+  }
+}
+
+function cancelOrLock() {
+  showOrLock.value = false
+  orPassword.value = ''
+  orPasswordError.value = false
+}
+
+// OpenRouter fields
 const apiKey = ref('')
 const showApiKey = ref(false)
 const searchModel = ref('')
@@ -37,11 +75,26 @@ const visionModel = ref('')
 const imageModel = ref('')
 const routingMode = ref<RoutingMode>('manual')
 const routingProfile = ref<RoutingProfile>('balanced')
-const searchStatus = ref<'disconnected' | 'connecting' | 'connected'>('disconnected')
-const genStatus = ref<'disconnected' | 'connecting' | 'connected'>('disconnected')
-const visionStatus = ref<'disconnected' | 'connecting' | 'connected'>('disconnected')
-const imageStatus = ref<'disconnected' | 'connecting' | 'connected'>('disconnected')
-const testing = ref(false)
+
+// ARK fields
+const arkKey = ref('')
+const showArkKey = ref(false)
+const arkGenModel = ref('')
+const arkVisionModel = ref('')
+const arkImageModel = ref('')
+
+// OpenRouter test statuses
+const orSearchStatus = ref<'disconnected' | 'connecting' | 'connected'>('disconnected')
+const orGenStatus = ref<'disconnected' | 'connecting' | 'connected'>('disconnected')
+const orVisionStatus = ref<'disconnected' | 'connecting' | 'connected'>('disconnected')
+const orImageStatus = ref<'disconnected' | 'connecting' | 'connected'>('disconnected')
+const orTesting = ref(false)
+
+// ARK test statuses
+const arkGenStatus = ref<'disconnected' | 'connecting' | 'connected'>('disconnected')
+const arkVisionStatus = ref<'disconnected' | 'connecting' | 'connected'>('disconnected')
+const arkImageStatus = ref<'disconnected' | 'connecting' | 'connected'>('disconnected')
+const arkTesting = ref(false)
 
 const keyInfo = ref<KeyInfo | null>(null)
 const loadingKeyInfo = ref(false)
@@ -73,6 +126,8 @@ watch(
   () => props.open,
   (open) => {
     if (open) {
+      provider.value = settingsStore.config.provider ?? 'ark'
+      // OpenRouter
       apiKey.value = settingsStore.config.openRouterKey
       showApiKey.value = false
       searchModel.value = settingsStore.config.searchModel
@@ -81,10 +136,15 @@ watch(
       imageModel.value = settingsStore.config.imageModel
       routingMode.value = settingsStore.config.routingMode ?? 'manual'
       routingProfile.value = settingsStore.config.routingProfile ?? 'balanced'
-      searchStatus.value = 'disconnected'
-      genStatus.value = 'disconnected'
-      visionStatus.value = 'disconnected'
-      imageStatus.value = 'disconnected'
+      // ARK
+      arkKey.value = settingsStore.config.arkKey ?? ''
+      showArkKey.value = false
+      arkGenModel.value = settingsStore.config.arkGenModel ?? ''
+      arkVisionModel.value = settingsStore.config.arkVisionModel ?? ''
+      arkImageModel.value = settingsStore.config.arkImageModel ?? ''
+      // Reset statuses
+      resetOrStatuses()
+      resetArkStatuses()
       keyInfo.value = null
 
       if (routingMode.value === 'auto') {
@@ -109,6 +169,25 @@ watch(routingProfile, (profile) => {
     recalculateRouting(profile)
   }
 })
+
+function resetOrStatuses() {
+  orSearchStatus.value = 'disconnected'
+  orGenStatus.value = 'disconnected'
+  orVisionStatus.value = 'disconnected'
+  orImageStatus.value = 'disconnected'
+}
+
+function resetArkStatuses() {
+  arkGenStatus.value = 'disconnected'
+  arkVisionStatus.value = 'disconnected'
+  arkImageStatus.value = 'disconnected'
+}
+
+function switchProvider(p: Provider) {
+  provider.value = p
+  resetOrStatuses()
+  resetArkStatuses()
+}
 
 async function loadKeyInfo() {
   if (!apiKey.value) return
@@ -143,7 +222,7 @@ async function handleRefreshRouting() {
   await refreshModels()
 }
 
-function getActiveModel(task: TaskType): string {
+function getActiveOrModel(task: TaskType): string {
   if (routingMode.value === 'auto') return resolveModel(task)
   switch (task) {
     case 'search': return searchModel.value
@@ -153,58 +232,96 @@ function getActiveModel(task: TaskType): string {
   }
 }
 
-async function handleTestConnection() {
-  const config: ApiConfig = {
+function buildFullConfig(): ApiConfig {
+  return {
+    provider: provider.value,
     openRouterKey: apiKey.value,
-    searchModel: getActiveModel('search'),
-    genModel: getActiveModel('gen'),
-    visionModel: getActiveModel('vision'),
-    imageModel: getActiveModel('image'),
+    searchModel: searchModel.value,
+    genModel: genModel.value,
+    visionModel: visionModel.value,
+    imageModel: imageModel.value,
     routingMode: routingMode.value,
     routingProfile: routingProfile.value,
+    arkKey: arkKey.value,
+    arkGenModel: arkGenModel.value,
+    arkVisionModel: arkVisionModel.value,
+    arkImageModel: arkImageModel.value,
   }
-  searchStatus.value = 'connecting'
-  genStatus.value = 'connecting'
-  visionStatus.value = 'connecting'
-  imageStatus.value = 'connecting'
-  testing.value = true
+}
+
+async function handleTestOpenRouter() {
+  const config = { ...buildFullConfig(), provider: 'openrouter' as Provider }
+  orTesting.value = true
+  orSearchStatus.value = 'connecting'
+  orGenStatus.value = 'connecting'
+  orVisionStatus.value = 'connecting'
+  orImageStatus.value = 'connecting'
 
   try {
     const [searchResult, genResult, visionResult, imageResult] = await Promise.all([
-      testConnection(config, config.searchModel),
-      testConnection(config, config.genModel),
-      testConnection(config, config.visionModel),
-      testConnection(config, config.imageModel),
+      testConnection(config, getActiveOrModel('search')),
+      testConnection(config, getActiveOrModel('gen')),
+      testConnection(config, getActiveOrModel('vision')),
+      testConnection(config, getActiveOrModel('image')),
     ])
+    orSearchStatus.value = searchResult.ok ? 'connected' : 'disconnected'
+    orGenStatus.value = genResult.ok ? 'connected' : 'disconnected'
+    orVisionStatus.value = visionResult.ok ? 'connected' : 'disconnected'
+    orImageStatus.value = imageResult.ok ? 'connected' : 'disconnected'
 
-    searchStatus.value = searchResult.ok ? 'connected' : 'disconnected'
-    genStatus.value = genResult.ok ? 'connected' : 'disconnected'
-    visionStatus.value = visionResult.ok ? 'connected' : 'disconnected'
-    imageStatus.value = imageResult.ok ? 'connected' : 'disconnected'
-
-    const results = [
+    const failed = [
       { name: '搜索', ok: searchResult.ok, error: searchResult.error },
       { name: '生成', ok: genResult.ok, error: genResult.error },
       { name: '视觉', ok: visionResult.ok, error: visionResult.error },
       { name: '图像', ok: imageResult.ok, error: imageResult.error },
-    ]
-    const failed = results.filter((r) => !r.ok)
+    ].filter((r) => !r.ok)
 
     if (failed.length === 0) {
-      showToast('所有模型连接成功', 'success')
+      showToast('OpenRouter 所有模型连接成功', 'success')
     } else {
-      const errors = failed.map((r) => `${r.name}: ${r.error}`).join('；')
-      showToast(`连接失败 — ${errors}`, 'destructive')
+      showToast(`连接失败 — ${failed.map((r) => `${r.name}: ${r.error}`).join('；')}`, 'destructive')
     }
   } catch (e) {
-    searchStatus.value = 'disconnected'
-    genStatus.value = 'disconnected'
-    visionStatus.value = 'disconnected'
-    imageStatus.value = 'disconnected'
-    const msg = e instanceof Error ? e.message : '测试连接时发生未知错误'
-    showToast(msg, 'destructive')
+    resetOrStatuses()
+    showToast(e instanceof Error ? e.message : '测试连接时发生未知错误', 'destructive')
   } finally {
-    testing.value = false
+    orTesting.value = false
+  }
+}
+
+async function handleTestArk() {
+  const config = { ...buildFullConfig(), provider: 'ark' as Provider }
+  arkTesting.value = true
+  arkGenStatus.value = 'connecting'
+  arkVisionStatus.value = 'connecting'
+  arkImageStatus.value = 'connecting'
+
+  try {
+    const [genResult, visionResult, imageResult] = await Promise.all([
+      testConnection(config, arkGenModel.value),
+      testConnection(config, arkVisionModel.value),
+      testImageConnection(config, arkImageModel.value),
+    ])
+    arkGenStatus.value = genResult.ok ? 'connected' : 'disconnected'
+    arkVisionStatus.value = visionResult.ok ? 'connected' : 'disconnected'
+    arkImageStatus.value = imageResult.ok ? 'connected' : 'disconnected'
+
+    const failed = [
+      { name: '生成', ok: genResult.ok, error: genResult.error },
+      { name: '视觉', ok: visionResult.ok, error: visionResult.error },
+      { name: '图像', ok: imageResult.ok, error: imageResult.error },
+    ].filter((r) => !r.ok)
+
+    if (failed.length === 0) {
+      showToast('火山方舟连接成功', 'success')
+    } else {
+      showToast(`连接失败 — ${failed.map((r) => `${r.name}: ${r.error}`).join('；')}`, 'destructive')
+    }
+  } catch (e) {
+    resetArkStatuses()
+    showToast(e instanceof Error ? e.message : '测试连接时发生未知错误', 'destructive')
+  } finally {
+    arkTesting.value = false
   }
 }
 
@@ -213,15 +330,7 @@ function handleCancel() {
 }
 
 function handleSave() {
-  settingsStore.updateConfig({
-    openRouterKey: apiKey.value,
-    searchModel: searchModel.value,
-    genModel: genModel.value,
-    visionModel: visionModel.value,
-    imageModel: imageModel.value,
-    routingMode: routingMode.value,
-    routingProfile: routingProfile.value,
-  })
+  settingsStore.updateConfig(buildFullConfig())
   showToast('API 配置已保存', 'success')
   emit('close')
 }
@@ -261,166 +370,306 @@ function handleSave() {
         </div>
       </div>
 
+      <!-- Provider Selector -->
       <div class="flex flex-col gap-2">
-        <label class="text-sm font-medium">AI 接口密钥</label>
-        <div class="relative">
-          <BaseInput
-            v-model="apiKey"
-            :type="showApiKey ? 'text' : 'password'"
-            placeholder="请输入从 OpenRouter 获取的 API Key"
-            class="pr-10"
-          />
+        <label class="text-sm font-medium">服务商</label>
+        <div class="grid grid-cols-2 gap-2">
           <button
             type="button"
-            class="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground transition-colors hover:text-foreground"
-            @click="showApiKey = !showApiKey"
+            class="flex flex-col gap-1 rounded-lg border p-3 text-left transition-colors"
+            :class="provider === 'openrouter'
+              ? 'border-brand bg-brand/10 text-foreground'
+              : 'border-border text-muted-foreground hover:bg-muted/50'"
+            @click="handleOrButtonClick"
           >
-            <Eye v-if="!showApiKey" :size="16" />
-            <EyeOff v-else :size="16" />
+            <div class="flex items-center gap-1.5">
+              <span class="text-sm font-medium">OpenRouter</span>
+              <Lock v-if="!orUnlocked" :size="12" class="opacity-50" />
+            </div>
+            <span class="text-xs opacity-70">海外多模型路由</span>
+          </button>
+          <button
+            type="button"
+            class="flex flex-col gap-1 rounded-lg border p-3 text-left transition-colors"
+            :class="provider === 'ark'
+              ? 'border-brand bg-brand/10 text-foreground'
+              : 'border-border text-muted-foreground hover:bg-muted/50'"
+            @click="switchProvider('ark')"
+          >
+            <span class="text-sm font-medium">火山方舟</span>
+            <span class="text-xs opacity-70">字节跳动大模型平台</span>
           </button>
         </div>
-        <div class="flex items-center gap-1 text-xs text-muted-foreground">
-          <span>这是连接 AI 服务的密钥，从 OpenRouter 网站免费注册获取</span>
-          <a
-            href="https://openrouter.ai/keys"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="text-brand underline hover:text-brand/80"
-          >前往获取 →</a>
+
+        <!-- OpenRouter 密码验证 -->
+        <div v-if="showOrLock" class="flex flex-col gap-2 rounded-lg border border-dashed p-3">
+          <p class="text-xs text-muted-foreground">请输入访问密码以解锁 OpenRouter 配置</p>
+          <div class="flex gap-2">
+            <BaseInput
+              v-model="orPassword"
+              type="password"
+              placeholder="访问密码"
+              class="flex-1"
+              @keydown.enter="submitOrPassword"
+              @keydown.esc="cancelOrLock"
+            />
+            <BaseButton size="sm" variant="brand" @click="submitOrPassword">确认</BaseButton>
+            <BaseButton size="sm" variant="ghost" @click="cancelOrLock">取消</BaseButton>
+          </div>
+          <p v-if="orPasswordError" class="text-xs text-destructive">密码错误，请重试</p>
         </div>
       </div>
 
-      <!-- Balance Info -->
-      <div
-        v-if="keyInfo"
-        class="flex items-center gap-4 rounded-lg border bg-muted/30 px-4 py-2.5 text-sm"
-      >
-        <Wallet :size="14" class="shrink-0 text-muted-foreground" />
-        <div class="flex flex-wrap items-center gap-x-4 gap-y-1">
-          <span>
-            <span class="text-muted-foreground">已用</span>
-            <span class="ml-1 font-medium">{{ formatUsd(keyInfo.usage) }}</span>
-          </span>
-          <span v-if="keyInfo.limit != null">
-            <span class="text-muted-foreground">额度</span>
-            <span class="ml-1 font-medium">{{ formatUsd(keyInfo.limit) }}</span>
-          </span>
-          <span v-if="keyInfo.limitRemaining != null">
-            <span class="text-muted-foreground">剩余</span>
-            <span class="ml-1 font-medium text-brand">{{ formatUsd(keyInfo.limitRemaining) }}</span>
-          </span>
-          <span v-if="keyInfo.isFreeTier" class="rounded bg-brand/10 px-1.5 py-0.5 text-xs text-brand">
-            免费套餐
-          </span>
-        </div>
-      </div>
-
-      <!-- Mode Tabs -->
-      <div class="flex flex-col gap-2">
-        <label class="text-sm font-medium">模型选择方式</label>
-        <BaseTabs v-model="routingMode" :tabs="modeTabs" />
-      </div>
-
-      <!-- Auto Mode -->
-      <template v-if="routingMode === 'auto'">
+      <!-- ==================== OpenRouter Config ==================== -->
+      <template v-if="provider === 'openrouter'">
         <div class="flex flex-col gap-2">
-          <label class="text-sm font-medium">偏好档位</label>
-          <div class="grid grid-cols-3 gap-2">
+          <label class="text-sm font-medium">AI 接口密钥</label>
+          <div class="relative">
+            <BaseInput
+              v-model="apiKey"
+              :type="showApiKey ? 'text' : 'password'"
+              placeholder="请输入从 OpenRouter 获取的 API Key"
+              class="pr-10"
+            />
             <button
-              v-for="p in profileCards"
-              :key="p.value"
               type="button"
-              class="flex flex-col items-center gap-1.5 rounded-lg border p-3 text-center transition-colors"
-              :class="
-                routingProfile === p.value
-                  ? 'border-brand bg-brand/10 text-foreground'
-                  : 'border-border text-muted-foreground hover:bg-muted/50'
-              "
-              @click="routingProfile = p.value"
+              class="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground transition-colors hover:text-foreground"
+              @click="showApiKey = !showApiKey"
             >
-              <span class="text-sm font-medium">{{ p.label }}</span>
-              <span class="text-xs leading-tight opacity-70">{{ p.desc }}</span>
+              <Eye v-if="!showApiKey" :size="16" />
+              <EyeOff v-else :size="16" />
             </button>
           </div>
+          <div class="flex items-center gap-1 text-xs text-muted-foreground">
+            <span>这是连接 AI 服务的密钥，从 OpenRouter 网站免费注册获取</span>
+            <a
+              href="https://openrouter.ai/keys"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="text-brand underline hover:text-brand/80"
+            >前往获取 →</a>
+          </div>
         </div>
 
-        <div class="flex flex-col gap-3 rounded-lg border bg-muted/30 p-4">
-          <div class="flex items-center justify-between">
-            <span class="text-sm font-medium">系统推荐</span>
-            <BaseButton
-              variant="ghost"
-              size="sm"
-              :loading="routingStore.loading"
-              :disabled="routingStore.loading || !apiKey"
-              @click="handleRefreshRouting"
-            >
-              刷新
-            </BaseButton>
+        <!-- Balance Info -->
+        <div
+          v-if="keyInfo"
+          class="flex items-center gap-4 rounded-lg border bg-muted/30 px-4 py-2.5 text-sm"
+        >
+          <Wallet :size="14" class="shrink-0 text-muted-foreground" />
+          <div class="flex flex-wrap items-center gap-x-4 gap-y-1">
+            <span>
+              <span class="text-muted-foreground">已用</span>
+              <span class="ml-1 font-medium">{{ formatUsd(keyInfo.usage) }}</span>
+            </span>
+            <span v-if="keyInfo.limit != null">
+              <span class="text-muted-foreground">额度</span>
+              <span class="ml-1 font-medium">{{ formatUsd(keyInfo.limit) }}</span>
+            </span>
+            <span v-if="keyInfo.limitRemaining != null">
+              <span class="text-muted-foreground">剩余</span>
+              <span class="ml-1 font-medium text-brand">{{ formatUsd(keyInfo.limitRemaining) }}</span>
+            </span>
+            <span v-if="keyInfo.isFreeTier" class="rounded bg-brand/10 px-1.5 py-0.5 text-xs text-brand">
+              免费套餐
+            </span>
           </div>
-          <div v-if="routingStore.loading" class="py-2 text-center text-sm text-muted-foreground">
-            正在获取模型列表...
-          </div>
-          <div v-else class="flex flex-col gap-2">
-            <div
-              v-for="item in taskLabels"
-              :key="item.task"
-              class="flex items-center justify-between text-sm"
-            >
-              <span class="text-muted-foreground">{{ item.label }}</span>
-              <span class="max-w-[60%] truncate font-medium">{{ getResolvedModelName(item.task) }}</span>
+        </div>
+
+        <!-- Mode Tabs -->
+        <div class="flex flex-col gap-2">
+          <label class="text-sm font-medium">模型选择方式</label>
+          <BaseTabs v-model="routingMode" :tabs="modeTabs" />
+        </div>
+
+        <!-- Auto Mode -->
+        <template v-if="routingMode === 'auto'">
+          <div class="flex flex-col gap-2">
+            <label class="text-sm font-medium">偏好档位</label>
+            <div class="grid grid-cols-3 gap-2">
+              <button
+                v-for="p in profileCards"
+                :key="p.value"
+                type="button"
+                class="flex flex-col items-center gap-1.5 rounded-lg border p-3 text-center transition-colors"
+                :class="
+                  routingProfile === p.value
+                    ? 'border-brand bg-brand/10 text-foreground'
+                    : 'border-border text-muted-foreground hover:bg-muted/50'
+                "
+                @click="routingProfile = p.value"
+              >
+                <span class="text-sm font-medium">{{ p.label }}</span>
+                <span class="text-xs leading-tight opacity-70">{{ p.desc }}</span>
+              </button>
             </div>
           </div>
+
+          <div class="flex flex-col gap-3 rounded-lg border bg-muted/30 p-4">
+            <div class="flex items-center justify-between">
+              <span class="text-sm font-medium">系统推荐</span>
+              <BaseButton
+                variant="ghost"
+                size="sm"
+                :loading="routingStore.loading"
+                :disabled="routingStore.loading || !apiKey"
+                @click="handleRefreshRouting"
+              >
+                刷新
+              </BaseButton>
+            </div>
+            <div v-if="routingStore.loading" class="py-2 text-center text-sm text-muted-foreground">
+              正在获取模型列表...
+            </div>
+            <div v-else class="flex flex-col gap-2">
+              <div
+                v-for="item in taskLabels"
+                :key="item.task"
+                class="flex items-center justify-between text-sm"
+              >
+                <span class="text-muted-foreground">{{ item.label }}</span>
+                <span class="max-w-[60%] truncate font-medium">{{ getResolvedModelName(item.task) }}</span>
+              </div>
+            </div>
+          </div>
+        </template>
+
+        <!-- Manual Mode -->
+        <template v-else>
+          <div class="flex flex-col gap-2">
+            <label class="text-sm font-medium">搜索热点用的 AI</label>
+            <BaseSelect v-model="searchModel" :options="searchModelOptions" placeholder="选择搜索模型" />
+            <span class="text-xs text-muted-foreground">用来搜索网上的热门主题和玩法</span>
+          </div>
+          <div class="flex flex-col gap-2">
+            <label class="text-sm font-medium">写脚本用的 AI</label>
+            <BaseSelect v-model="genModel" :options="genModelOptions" placeholder="选择生成模型" />
+            <span class="text-xs text-muted-foreground">用来生成买量视频脚本，推荐选带"推荐"标记的</span>
+          </div>
+          <div class="flex flex-col gap-2">
+            <label class="text-sm font-medium">看视频用的 AI</label>
+            <BaseSelect v-model="visionModel" :options="visionModelOptions" placeholder="选择视觉模型" />
+            <span class="text-xs text-muted-foreground">用来分析你上传的视频画面</span>
+          </div>
+          <div class="flex flex-col gap-2">
+            <label class="text-sm font-medium">画参考图用的 AI</label>
+            <BaseSelect v-model="imageModel" :options="imageModelOptions" placeholder="选择图像模型" />
+            <span class="text-xs text-muted-foreground">用来为脚本分镜生成画面参考图</span>
+          </div>
+        </template>
+
+        <!-- Connection Test -->
+        <div class="flex flex-col gap-3 rounded-lg border bg-muted/30 p-4">
+          <div class="text-sm font-medium">连接测试</div>
+          <div class="grid grid-cols-2 gap-x-6 gap-y-2">
+            <div class="flex items-center gap-2">
+              <span class="text-sm text-muted-foreground">搜索</span>
+              <StatusIndicator :status="orSearchStatus" />
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-sm text-muted-foreground">生成</span>
+              <StatusIndicator :status="orGenStatus" />
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-sm text-muted-foreground">视觉</span>
+              <StatusIndicator :status="orVisionStatus" />
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-sm text-muted-foreground">图像</span>
+              <StatusIndicator :status="orImageStatus" />
+            </div>
+          </div>
+          <BaseButton variant="outline" size="sm" :loading="orTesting" :disabled="orTesting" @click="handleTestOpenRouter">
+            测试连接
+          </BaseButton>
         </div>
       </template>
 
-      <!-- Manual Mode -->
+      <!-- ==================== 火山方舟 Config ==================== -->
       <template v-else>
         <div class="flex flex-col gap-2">
-          <label class="text-sm font-medium">搜索热点用的 AI</label>
-          <BaseSelect v-model="searchModel" :options="searchModelOptions" placeholder="选择搜索模型" />
-          <span class="text-xs text-muted-foreground">用来搜索网上的热门主题和玩法</span>
+          <label class="text-sm font-medium">API Key</label>
+          <div class="relative">
+            <BaseInput
+              v-model="arkKey"
+              :type="showArkKey ? 'text' : 'password'"
+              placeholder="请输入火山方舟 API Key"
+              class="pr-10"
+            />
+            <button
+              type="button"
+              class="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground transition-colors hover:text-foreground"
+              @click="showArkKey = !showArkKey"
+            >
+              <Eye v-if="!showArkKey" :size="16" />
+              <EyeOff v-else :size="16" />
+            </button>
+          </div>
+          <div class="flex items-center gap-1 text-xs text-muted-foreground">
+            <span>在火山方舟控制台的「API Key 管理」中获取</span>
+            <a
+              href="https://console.volcengine.com/ark/region:ark+cn-beijing/apiKey"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="text-brand underline hover:text-brand/80"
+            >前往获取 →</a>
+          </div>
         </div>
+
         <div class="flex flex-col gap-2">
-          <label class="text-sm font-medium">写脚本用的 AI</label>
-          <BaseSelect v-model="genModel" :options="genModelOptions" placeholder="选择生成模型" />
-          <span class="text-xs text-muted-foreground">用来生成买量视频脚本，推荐选带"推荐"标记的</span>
+          <label class="text-sm font-medium">生成 / 搜索模型</label>
+          <BaseInput
+            v-model="arkGenModel"
+            placeholder="ep-xxxxxxxx 或 deepseek-v3-250324"
+          />
+          <span class="text-xs text-muted-foreground">用于脚本生成和热点搜索，填写推理接入点 ID 或模型名称</span>
         </div>
+
         <div class="flex flex-col gap-2">
-          <label class="text-sm font-medium">看视频用的 AI</label>
-          <BaseSelect v-model="visionModel" :options="visionModelOptions" placeholder="选择视觉模型" />
-          <span class="text-xs text-muted-foreground">用来分析你上传的视频画面</span>
+          <label class="text-sm font-medium">视觉模型</label>
+          <BaseInput
+            v-model="arkVisionModel"
+            placeholder="ep-xxxxxxxx 或 doubao-vision-pro-32k-250115"
+          />
+          <span class="text-xs text-muted-foreground">用于分析视频画面，填写支持视觉输入的推理接入点 ID 或模型名称</span>
         </div>
+
         <div class="flex flex-col gap-2">
-          <label class="text-sm font-medium">画参考图用的 AI</label>
-          <BaseSelect v-model="imageModel" :options="imageModelOptions" placeholder="选择图像模型" />
-          <span class="text-xs text-muted-foreground">用来为脚本分镜生成画面参考图</span>
+          <label class="text-sm font-medium">生图模型</label>
+          <BaseInput
+            v-model="arkImageModel"
+            placeholder="ep-xxxxxxxx 或 doubao-seedream-5-0-260128"
+          />
+          <span class="text-xs text-muted-foreground">用于生成分镜参考图，填写推理接入点 ID 或模型名称</span>
+        </div>
+
+        <!-- Connection Test (ARK) -->
+        <div class="flex flex-col gap-3 rounded-lg border bg-muted/30 p-4">
+          <div class="text-sm font-medium">连接测试</div>
+          <div class="grid grid-cols-2 gap-x-6 gap-y-2">
+            <div class="flex items-center gap-2">
+              <span class="text-sm text-muted-foreground">生成</span>
+              <StatusIndicator :status="arkGenStatus" />
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-sm text-muted-foreground">视觉</span>
+              <StatusIndicator :status="arkVisionStatus" />
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-sm text-muted-foreground">图像</span>
+              <StatusIndicator :status="arkImageStatus" />
+            </div>
+          </div>
+          <BaseButton variant="outline" size="sm" :loading="arkTesting" :disabled="arkTesting" @click="handleTestArk">
+            测试连接
+          </BaseButton>
+        </div>
+
+        <div class="rounded-lg border border-muted bg-muted/20 px-3 py-2.5 text-xs text-muted-foreground">
+          <span class="font-medium text-foreground">注意：</span>
+          火山方舟支持生成、视觉和生图任务。搜索热点同样使用生成模型。
         </div>
       </template>
-
-      <div class="flex flex-col gap-3 rounded-lg border bg-muted/30 p-4">
-        <div class="text-sm font-medium">连接测试</div>
-        <div class="grid grid-cols-2 gap-x-6 gap-y-2">
-          <div class="flex items-center gap-2">
-            <span class="text-sm text-muted-foreground">搜索</span>
-            <StatusIndicator :status="searchStatus" />
-          </div>
-          <div class="flex items-center gap-2">
-            <span class="text-sm text-muted-foreground">生成</span>
-            <StatusIndicator :status="genStatus" />
-          </div>
-          <div class="flex items-center gap-2">
-            <span class="text-sm text-muted-foreground">视觉</span>
-            <StatusIndicator :status="visionStatus" />
-          </div>
-          <div class="flex items-center gap-2">
-            <span class="text-sm text-muted-foreground">图像</span>
-            <StatusIndicator :status="imageStatus" />
-          </div>
-        </div>
-        <BaseButton variant="outline" size="sm" :loading="testing" :disabled="testing" @click="handleTestConnection">
-          测试连接
-        </BaseButton>
-      </div>
     </div>
 
     <template #footer>

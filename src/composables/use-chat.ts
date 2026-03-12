@@ -43,7 +43,7 @@ export function useChat() {
 
   async function runGeneration(userText: string, type: MessageType = MessageType.Script): Promise<void> {
     const config = unref(settingsStore.config)
-    if (!config.openRouterKey) {
+    if (!settingsStore.hasApiKey) {
       chatStore.failGeneration('请先配置 API Key')
       showToast('请先配置 API Key', 'destructive')
       return
@@ -108,15 +108,13 @@ export function useChat() {
     }
 
     const scriptTypeName = SCRIPT_TYPES.find((t) => t.id === genConfig.scriptType)?.name ?? ''
-    const prompt = genConfig.direction === ProductionDirection.UeGameplay
-      ? '请根据以上配置生成3D/UE创意玩法买量脚本。先输出玩法策划简案，再写分镜脚本。'
-      : `请根据以上配置，严格按照「${scriptTypeName}」脚本类型的输出格式和创作规则，生成买量视频脚本。`
+    const prompt = `请根据以上配置，严格按照「${scriptTypeName}」脚本类型的输出格式和创作规则，生成买量视频脚本。`
     await runGeneration(prompt)
   }
 
   async function generateVariants(): Promise<void> {
     const config = unref(settingsStore.config)
-    if (!config.openRouterKey) {
+    if (!settingsStore.hasApiKey) {
       showToast('请先配置 API Key', 'destructive')
       return
     }
@@ -139,9 +137,7 @@ export function useChat() {
     })
 
     const scriptTypeName = SCRIPT_TYPES.find((t) => t.id === genConfig.scriptType)?.name ?? ''
-    const userPrompt = genConfig.direction === ProductionDirection.UeGameplay
-      ? '请根据以上配置生成3D/UE创意玩法买量脚本。先输出玩法策划简案，再写分镜脚本。'
-      : `请根据以上配置，严格按照「${scriptTypeName}」脚本类型的输出格式和创作规则，生成买量视频脚本。`
+    const userPrompt = `请根据以上配置，严格按照「${scriptTypeName}」脚本类型的输出格式和创作规则，生成买量视频脚本。`
 
     const tasks = variants.map((variant, index) => {
       const variantSuffix = buildVariantPromptSuffix(index, count)
@@ -187,7 +183,7 @@ export function useChat() {
 
   async function generateGameplayDirections(): Promise<void> {
     const config = unref(settingsStore.config)
-    if (!config.openRouterKey) {
+    if (!settingsStore.hasApiKey) {
       chatStore.failGeneration('请先配置 API Key')
       showToast('请先配置 API Key', 'destructive')
       return
@@ -231,7 +227,7 @@ export function useChat() {
 
   async function generateGameplayDetail(directionNumber: number): Promise<void> {
     const config = unref(settingsStore.config)
-    if (!config.openRouterKey) {
+    if (!settingsStore.hasApiKey) {
       chatStore.failGeneration('请先配置 API Key')
       showToast('请先配置 API Key', 'destructive')
       return
@@ -244,7 +240,7 @@ export function useChat() {
     const allApiMsgs = chatStore.getMessagesForApi()
     const lastAssistant = [...allApiMsgs].reverse().find((m) => m.role === 'assistant')
     const directionsContent = lastAssistant?.content ?? ''
-    const systemPrompt = buildUeSystemPrompt(genConfig, currentGame, directionsContent)
+    const systemPrompt = buildUeSystemPrompt(genConfig, currentGame)
 
     const dirLabel = ['一', '二', '三'][directionNumber - 1] ?? String(directionNumber)
     chatStore.addMessage({
@@ -254,8 +250,11 @@ export function useChat() {
     })
     chatStore.startGeneration(MessageType.Script)
 
+    const directionsRequestPrompt = buildGameplayDirectionsPrompt(genConfig, currentGame)
     const messages = [
       { role: 'system', content: systemPrompt },
+      { role: 'user', content: directionsRequestPrompt },
+      { role: 'assistant', content: directionsContent },
       { role: 'user', content: userPrompt },
     ]
 

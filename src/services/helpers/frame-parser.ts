@@ -4,12 +4,12 @@ const FIELD_DEFS = [
   { field: 'scale', keys: ['景别', '景', 'scale', 'framing'] },
   { field: 'scene', keys: ['画面', '场景', 'scene', '视觉'] },
   { field: 'voiceover', keys: ['口播台词', '台词', '旁白', '口播', 'voiceover', 'VO', '对白'] },
-  { field: 'textOverlay', keys: ['字幕', '花字', '文字', '文案'] },
+  { field: 'textOverlay', keys: ['字幕', '花字', '文字', '文案', '字幕/花字'] },
   { field: 'camera', keys: ['镜头', '镜头运动', '镜头路径', 'camera', '运镜', '机位'] },
-  { field: 'vfx', keys: ['特效', '特效分层', 'vfx', 'effects'] },
+  { field: 'vfx', keys: ['特效', '特效分层', 'vfx', 'effects', '游戏反馈'] },
   { field: 'transition', keys: ['转场', 'transition'] },
   { field: 'sfx', keys: ['音效', 'sfx', 'BGM', '音乐', 'BGM/情绪', 'BGM/音效'] },
-  { field: 'notes', keys: ['备注', 'notes', '说明'] },
+  { field: 'notes', keys: ['备注', 'notes', '说明', '玩家操作'] },
 ] as const
 
 type FieldName = (typeof FIELD_DEFS)[number]['field']
@@ -85,6 +85,9 @@ export function parseFrames(text: string): Shot[] {
 
   const shots = trySchemeFormat(cleaned)
     ?? tryTimelineFormat(cleaned)
+    ?? tryTimelineLike(cleaned)
+    ?? tryShotPipeFormat(cleaned)
+    ?? tryMarkdownHeaderFormat(cleaned)
     ?? tryBracketFormat(cleaned)
     ?? tryShotNumberFormat(cleaned)
     ?? tryNumberListFormat(cleaned)
@@ -190,4 +193,74 @@ function fallbackParagraphs(text: string): Omit<Shot, 'id'>[] {
     segment: `段落${i + 1}`,
     ...extractAllFields(p),
   }))
+}
+
+// 处理 "Shot N | time | segment\n- field: value" 格式（UeGameplayScript）
+function tryShotPipeFormat(text: string): Omit<Shot, 'id'>[] | null {
+  const re = /^(Shot\s*\d+)\s*\|\s*([^|\n]+?)\s*\|\s*([^\n]+)\n([\s\S]*?)(?=^Shot\s*\d+\s*\||$)/gim
+  const matches = [...text.matchAll(re)]
+  if (matches.length < 2) return null
+
+  return matches.map((m) => ({
+    ...extractAllFields(m[4]!),
+    timeRange: m[2]!.trim(),
+    segment: `${m[1]!.trim()} · ${m[3]!.trim()}`,
+  }))
+}
+
+// 处理 "### 字段名\n值" 格式（模型自由输出时的兜底）
+function tryMarkdownHeaderFormat(text: string): Omit<Shot, 'id'>[] | null {
+  if (!/^#{2,4}\s*镜号/m.test(text)) return null
+
+  const shotBoundRe = /(?:^|\n)(?=#{2,4}\s*镜号)/g
+  const blocks = text.split(shotBoundRe).filter((b) => b.trim())
+  if (blocks.length < 1) return null
+
+  const KEY_MAP: Record<string, string> = {
+    '镜号': 'shotNum', 'shot': 'shotNum',
+    '时间': 'timeRange',
+    '玩法节点': 'segment', '节点': 'segment',
+    '景别': 'scale',
+    '画面': 'scene', '场景': 'scene',
+    '玩家操作': 'notes',
+    '游戏反馈': 'vfx', '特效': 'vfx',
+    '镜头': 'camera', '运镜': 'camera',
+    '字幕': 'textOverlay', '字幕/花字': 'textOverlay', '花字': 'textOverlay',
+    '音效': 'sfx', 'bgm': 'sfx',
+    '转场': 'transition',
+    '台词': 'voiceover', '旁白': 'voiceover', '口播': 'voiceover',
+  }
+
+  const shots: Omit<Shot, 'id'>[] = []
+  for (const block of blocks) {
+    const headerFieldRe = /^#{2,4}\s*([^\n]+?)\s*\n([^#]*)/gm
+    const fields: Record<string, string> = {}
+    let m: RegExpExecArray | null
+    while ((m = headerFieldRe.exec(block)) !== null) {
+      const rawKey = m[1]!.trim().toLowerCase()
+      const value = m[2]!.trim()
+      const mapped = KEY_MAP[rawKey]
+      if (mapped && value) fields[mapped] = value
+    }
+
+    const shotNum = fields['shotNum'] ?? ''
+    const segment = fields['segment'] || shotNum
+    if (!segment && !fields['scene']) continue
+
+    shots.push({
+      timeRange: fields['timeRange'] ?? '',
+      segment,
+      scale: fields['scale'],
+      scene: fields['scene'] ?? '',
+      voiceover: fields['voiceover'] ?? '',
+      textOverlay: fields['textOverlay'],
+      camera: fields['camera'],
+      vfx: fields['vfx'],
+      transition: fields['transition'],
+      sfx: fields['sfx'],
+      notes: fields['notes'],
+    })
+  }
+
+  return shots.length > 0 ? shots : null
 }

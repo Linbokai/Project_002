@@ -4,7 +4,7 @@ import { UE_HOOK_PATTERNS } from '@/constants/ue-hook-patterns'
 import { UE_GAMEPLAY_PRESETS } from '@/constants/ue-gameplay-presets'
 import { SCRIPT_TYPES } from '@/constants/script-types'
 import { AUDIENCE_PROFILES } from '@/constants/audience-profiles'
-import { AspectRatio, AudienceType, UeContentType } from '@/models/enums'
+import { AspectRatio, AudienceType, UeContentType, ScriptType } from '@/models/enums'
 import { getRhythmTemplate, formatRhythmForPrompt } from './rhythm-engine'
 
 export function buildUeSystemPrompt(
@@ -224,7 +224,7 @@ function buildUeScriptTypeSection(config: GenerationConfig): string {
     '',
     '### ⛔ 格式硬性禁令',
     '- 每个字段必须独占一行，一行只写一个字段',
-    '- 禁止使用 | 管道符/竖线分隔字段',
+    ...(config.scriptType !== ScriptType.UeGameplayScript ? ['- 禁止使用 | 管道符/竖线分隔字段'] : []),
     '- 禁止使用 markdown 表格格式',
     '- 禁止使用 <br> 等 HTML 标签',
     '- 禁止将多个字段合并到同一行',

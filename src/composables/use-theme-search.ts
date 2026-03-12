@@ -80,7 +80,7 @@ export function useThemeSearch() {
 
   async function searchHotTopics(): Promise<void> {
     const config = unref(settingsStore.config)
-    if (!config.openRouterKey) {
+    if (!settingsStore.hasApiKey) {
       throw new Error('请先配置 API Key')
     }
 
@@ -116,7 +116,7 @@ export function useThemeSearch() {
 
   async function generateWeeklyReport(): Promise<void> {
     const config = unref(settingsStore.config)
-    if (!config.openRouterKey) {
+    if (!settingsStore.hasApiKey) {
       showToast('请先配置 API Key', 'destructive')
       throw new Error('请先配置 API Key')
     }

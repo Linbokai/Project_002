@@ -73,7 +73,7 @@ export function useVideoAnalysis() {
 
   function requireApiKey(): ApiConfig | null {
     const config = unref(settingsStore.config)
-    if (!config.openRouterKey) {
+    if (!settingsStore.hasApiKey) {
       showToast('请先配置 API Key', 'destructive')
       return null
     }

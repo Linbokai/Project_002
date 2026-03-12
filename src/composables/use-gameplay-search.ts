@@ -80,7 +80,7 @@ export function useGameplaySearch() {
 
   async function searchHotGameplays(): Promise<void> {
     const config = unref(settingsStore.config)
-    if (!config.openRouterKey) {
+    if (!settingsStore.hasApiKey) {
       throw new Error('请先配置 API Key')
     }
 

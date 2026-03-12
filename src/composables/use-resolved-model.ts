@@ -23,7 +23,7 @@ export function useResolvedModel() {
   }
 
   function getModelForTask(task: TaskType): string {
-    if (settingsStore.config.routingMode === 'auto') {
+    if (settingsStore.config.provider !== 'ark' && settingsStore.config.routingMode === 'auto') {
       const resolved = routingStore.resolvedModels[task]
       if (resolved) return resolved
     }
@@ -31,6 +31,11 @@ export function useResolvedModel() {
   }
 
   function getModelChainForTask(task: TaskType): string[] {
+    // ARK has no fallback chain — use the configured model directly
+    if (settingsStore.config.provider === 'ark') {
+      return [settingsStore.getManualModel(task)]
+    }
+
     if (settingsStore.config.routingMode === 'auto') {
       const chain = getFallbackChain(task)
       if (chain.length > 0) return chain

@@ -25,6 +25,13 @@ export const VIDEO_FRAME_EXTRACTION = {
   JPEG_QUALITY: 0.75,
 } as const
 
+export const ARK_DEFAULTS = {
+  BASE_URL: 'https://ark.cn-beijing.volces.com/api/v3',
+  GEN_MODEL: 'deepseek-v3-250324',
+  VISION_MODEL: 'doubao-vision-pro-32k-250115',
+  IMAGE_MODEL: 'doubao-seedream-5-0-260128',
+} as const
+
 export const API_DEFAULTS = {
   BASE_URL: 'https://openrouter.ai/api/v1',
   SEARCH_MODEL: 'perplexity/sonar-pro-search',

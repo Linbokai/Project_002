@@ -3,6 +3,7 @@ export type { Shot, ParsedScript } from './script'
 export type { ThemeTopic, PresetTheme, CustomTheme } from './theme'
 export type { Game, GameAsset, PerformanceRecord } from './game'
 export type {
+  Provider,
   HeroConfig,
   CollabIPConfig,
   GenerationConfig,

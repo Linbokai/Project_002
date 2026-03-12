@@ -54,6 +54,29 @@ export function buildStoryboardGridSystemPrompt(aspectRatio: string, visualConte
   return parts.join('\n\n')
 }
 
+/**
+ * ARK 模式下为单个镜头构建生图 prompt
+ */
+export function buildArkShotPrompt(
+  shot: Shot,
+  index: number,
+  gameName: string,
+  visualContext?: string,
+): string {
+  const parts = [`游戏「${gameName}」广告分镜 #${index + 1}`]
+
+  if (shot.scale) parts.push(`景别：${shot.scale}`)
+  parts.push(`画面：${shot.scene}`)
+  if (shot.camera) parts.push(`镜头运动：${shot.camera}`)
+  if (shot.vfx) parts.push(`特效：${shot.vfx}`)
+
+  parts.push('风格：电影分镜稿质感，构图清晰，简洁有力')
+
+  if (visualContext) parts.push(`视觉设定：${visualContext}`)
+
+  return parts.join('\n')
+}
+
 export function buildStoryboardGridPrompt(
   shots: Shot[],
   gameName: string,

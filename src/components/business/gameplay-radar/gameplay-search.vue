@@ -34,7 +34,7 @@ function handleRegionChange(r: SearchRegion) {
 async function handleSearch() {
   errorMessage.value = ''
   try {
-    if (!settingsStore.config.openRouterKey) {
+    if (!settingsStore.hasApiKey) {
       errorMessage.value = '请先配置 API Key'
       toast.showToast('请先配置 API Key', 'destructive')
       return

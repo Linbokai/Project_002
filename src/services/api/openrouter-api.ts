@@ -1,6 +1,15 @@
-import { API_DEFAULTS } from '@/constants'
+import { API_DEFAULTS, ARK_DEFAULTS } from '@/constants'
 import type { ApiConfig } from '@/models/types'
 import { buildHeaders, parseApiError } from './openrouter-client'
+import { generateImage } from './image-api'
+
+function getRequestMeta(config: ApiConfig): { url: string; headers: Record<string, string> } {
+  const isArk = config.provider === 'ark'
+  return {
+    url: `${isArk ? ARK_DEFAULTS.BASE_URL : API_DEFAULTS.BASE_URL}/chat/completions`,
+    headers: buildHeaders(isArk ? config.arkKey : config.openRouterKey, isArk),
+  }
+}
 
 export interface StreamCallbacks {
   onChunk: (text: string) => void
@@ -41,7 +50,7 @@ export async function streamChat(
   options: RequestOptions,
   callbacks: StreamCallbacks,
 ): Promise<void> {
-  const url = `${API_DEFAULTS.BASE_URL}/chat/completions`
+  const { url, headers } = getRequestMeta(options.config)
   const modelsToTry = [options.model, ...(options.fallbackModels ?? [])]
 
   for (let i = 0; i < modelsToTry.length; i++) {
@@ -52,7 +61,7 @@ export async function streamChat(
     try {
       response = await fetch(url, {
         method: 'POST',
-        headers: buildHeaders(options.config.openRouterKey),
+        headers,
         body: JSON.stringify(buildBody(currentModel, options, true)),
         signal: options.signal,
       })
@@ -129,7 +138,7 @@ export async function streamChat(
 export async function chatCompletion(
   options: RequestOptions,
 ): Promise<string> {
-  const url = `${API_DEFAULTS.BASE_URL}/chat/completions`
+  const { url, headers } = getRequestMeta(options.config)
   const modelsToTry = [options.model, ...(options.fallbackModels ?? [])]
 
   for (let i = 0; i < modelsToTry.length; i++) {
@@ -140,7 +149,7 @@ export async function chatCompletion(
     try {
       response = await fetch(url, {
         method: 'POST',
-        headers: buildHeaders(options.config.openRouterKey),
+        headers,
         body: JSON.stringify(buildBody(currentModel, options, false)),
       })
     } catch (e) {
@@ -173,7 +182,8 @@ export interface TestConnectionResult {
 }
 
 export async function testConnection(config: ApiConfig, model: string): Promise<TestConnectionResult> {
-  if (!config.openRouterKey) {
+  const activeKey = config.provider === 'ark' ? config.arkKey : config.openRouterKey
+  if (!activeKey) {
     return { ok: false, error: '未填写 API Key' }
   }
   if (!model) {
@@ -191,6 +201,31 @@ export async function testConnection(config: ApiConfig, model: string): Promise<
     return result.length > 0
       ? { ok: true }
       : { ok: false, error: '模型返回空响应' }
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : '未知错误'
+    return { ok: false, error: msg }
+  }
+}
+
+export async function testImageConnection(config: ApiConfig, model: string): Promise<TestConnectionResult> {
+  const activeKey = config.provider === 'ark' ? config.arkKey : config.openRouterKey
+  if (!activeKey) {
+    return { ok: false, error: '未填写 API Key' }
+  }
+  if (!model) {
+    return { ok: false, error: '未选择模型' }
+  }
+
+  try {
+    const result = await generateImage({
+      config,
+      model,
+      prompt: '一只白色的猫',
+      imageConfig: { aspect_ratio: '1:1', image_size: '0.5K' },
+    })
+    return result.images.length > 0
+      ? { ok: true }
+      : { ok: false, error: '模型未返回图片' }
   } catch (e) {
     const msg = e instanceof Error ? e.message : '未知错误'
     return { ok: false, error: msg }

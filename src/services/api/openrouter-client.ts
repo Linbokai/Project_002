@@ -1,13 +1,16 @@
 import { API_DEFAULTS, APP_NAME } from '@/constants'
 import type { KeyInfo } from '@/models/types'
 
-export function buildHeaders(apiKey: string): Record<string, string> {
-  return {
+export function buildHeaders(apiKey: string, isArk = false): Record<string, string> {
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     'Authorization': `Bearer ${apiKey}`,
-    'HTTP-Referer': window.location.origin,
-    'X-Title': encodeURIComponent(APP_NAME),
   }
+  if (!isArk) {
+    headers['HTTP-Referer'] = window.location.origin
+    headers['X-Title'] = encodeURIComponent(APP_NAME)
+  }
+  return headers
 }
 
 export async function parseApiError(response: Response): Promise<string> {

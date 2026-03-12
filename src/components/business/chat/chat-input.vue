@@ -129,9 +129,9 @@ async function handleVideoSubmit(file: File, metrics?: VideoMetrics) {
       </button>
     </div>
 
-    <!-- Collapsible Model Selectors -->
+    <!-- Collapsible Model Selectors (OpenRouter only) -->
     <div
-      v-show="showModels"
+      v-show="showModels && settingsStore.config.provider !== 'ark'"
       class="flex flex-wrap items-center gap-x-3 gap-y-1.5 border-b border-border/50 px-4 py-2"
     >
       <div class="flex items-center gap-1.5">
