@@ -27,8 +27,9 @@ export const VIDEO_FRAME_EXTRACTION = {
 
 export const ARK_DEFAULTS = {
   BASE_URL: 'https://ark.cn-beijing.volces.com/api/v3',
-  GEN_MODEL: 'deepseek-v3-250324',
-  VISION_MODEL: 'doubao-vision-pro-32k-250115',
+  API_KEY: 'fb37baec-9a0c-429e-8fc4-33eaf876d9ed',
+  GEN_MODEL: 'doubao-seed-2-0-pro-260215',
+  VISION_MODEL: 'doubao-seed-2-0-pro-260215',
   IMAGE_MODEL: 'doubao-seedream-5-0-260128',
 } as const
 

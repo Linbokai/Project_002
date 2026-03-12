@@ -17,7 +17,7 @@ export const useSettingsStore = defineStore('settings', () => {
       imageModel: API_DEFAULTS.IMAGE_MODEL,
       routingMode: API_DEFAULTS.ROUTING_MODE,
       routingProfile: API_DEFAULTS.ROUTING_PROFILE,
-      arkKey: '',
+      arkKey: ARK_DEFAULTS.API_KEY,
       arkGenModel: ARK_DEFAULTS.GEN_MODEL,
       arkVisionModel: ARK_DEFAULTS.VISION_MODEL,
       arkImageModel: ARK_DEFAULTS.IMAGE_MODEL,

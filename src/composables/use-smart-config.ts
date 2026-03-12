@@ -17,7 +17,7 @@ const GAME_TYPE_PRESETS: Record<string, SmartPreset> = {
     scriptType: ScriptType.VoGuide,
     audience: AudienceType.Male2535,
     recommendedThemes: ['tower', 'rescue'],
-    recommendedSellTags: ['联盟', '策略'],
+    recommendedSellTags: ['部落', '跨服战斗'],
   },
   RPG: {
     duration: 15,
@@ -33,7 +33,7 @@ const GAME_TYPE_PRESETS: Record<string, SmartPreset> = {
     scriptType: ScriptType.ShowcaseCharacter,
     audience: AudienceType.Male1824,
     recommendedThemes: ['bullet'],
-    recommendedSellTags: ['PVP', '竞技'],
+    recommendedSellTags: ['PVP', '战斗(割草)'],
   },
   卡牌: {
     duration: 15,
@@ -49,7 +49,7 @@ const GAME_TYPE_PRESETS: Record<string, SmartPreset> = {
     scriptType: ScriptType.Hook5s,
     audience: AudienceType.General,
     recommendedThemes: ['asmr', 'merge'],
-    recommendedSellTags: ['休闲', '解压'],
+    recommendedSellTags: ['小游戏', '福利'],
   },
   二次元: {
     duration: 15,
@@ -65,7 +65,7 @@ const GAME_TYPE_PRESETS: Record<string, SmartPreset> = {
     scriptType: ScriptType.ShowcaseMap,
     audience: AudienceType.Male1824,
     recommendedThemes: ['survive'],
-    recommendedSellTags: ['PVP', '竞技'],
+    recommendedSellTags: ['PVP', '跨服战斗'],
   },
   模拟经营: {
     duration: 30,
@@ -73,7 +73,7 @@ const GAME_TYPE_PRESETS: Record<string, SmartPreset> = {
     scriptType: ScriptType.VoGuide,
     audience: AudienceType.General,
     recommendedThemes: [],
-    recommendedSellTags: ['经营', '建造'],
+    recommendedSellTags: ['任务', '冒险'],
   },
 }
 
